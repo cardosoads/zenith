@@ -3,6 +3,9 @@ set -e
 
 cd /var/www/html
 
+# Ensure supervisor log directory exists
+mkdir -p /var/log/supervisor
+
 # Ensure storage directories have correct permissions
 chown -R www-data:www-data storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
