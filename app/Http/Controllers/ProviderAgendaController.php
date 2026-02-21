@@ -36,19 +36,55 @@ class ProviderAgendaController extends Controller
         $exists = $profile->agendas()->where('slug', $slug)->exists();
         abort_if($exists, 422, 'Slug de agenda já está em uso.');
 
-        $profile->agendas()->create([
+        $agenda = $profile->agendas()->create([
             'name' => $payload['name'],
             'slug' => $slug,
             'description' => $payload['description'] ?? null,
             'timezone' => $payload['timezone'] ?? $profile->timezone,
-            'is_published' => false,
+            'is_published' => true, // Auto publish on create for better DX
             'theme' => 'auto',
             'accent' => 'sky',
             'density' => 'medium',
             'preset' => 'clean',
+            'primary_color' => $payload['primaryColor'] ?? '#18181b',
+            'secondary_color' => $payload['secondaryColor'] ?? '#27272a',
+            'payment_requirement' => $payload['payment_requirement'] ?? 'none',
             'embed_height' => 680,
             'customer_extra_fields' => [],
         ]);
+
+        // Save Services
+        $services = $request->input('services', []);
+        $interval = $request->input('interval', 30);
+        foreach ($services as $serviceData) {
+            $price = $serviceData['isFree'] ? '0' : ($serviceData['price'] ?: '0');
+            $agenda->services()->create([
+                'provider_profile_id' => $profile->id,
+                'name' => $serviceData['name'],
+                'price_cents' => (int) (str_replace(',', '.', (string) $price) * 100),
+                'duration_minutes' => $interval,
+                'is_active' => true,
+            ]);
+        }
+
+        // Save Availability Rules
+        $weekdays = $request->input('weekdays', []);
+        $startTime = $request->input('startTime');
+        $endTime = $request->input('endTime');
+
+        $weekdayMap = ['seg' => 1, 'ter' => 2, 'qua' => 3, 'qui' => 4, 'sex' => 5, 'sab' => 6, 'dom' => 0];
+
+        foreach ($weekdays as $day) {
+            if (isset($weekdayMap[$day])) {
+                $agenda->availabilityRules()->create([
+                    'provider_profile_id' => $profile->id,
+                    'weekday' => $weekdayMap[$day],
+                    'starts_at' => $startTime,
+                    'ends_at' => $endTime,
+                    'is_active' => true,
+                ]);
+            }
+        }
 
         return redirect()->route('provider.agendas.index')->with('status', 'agenda-created');
     }
@@ -73,8 +109,72 @@ class ProviderAgendaController extends Controller
             'slug' => $slug,
             'description' => $payload['description'] ?? null,
             'timezone' => $payload['timezone'] ?? $profile->timezone,
+            'primary_color' => $payload['primaryColor'] ?? $agenda->primary_color,
+            'secondary_color' => $payload['secondaryColor'] ?? $agenda->secondary_color,
+            'payment_requirement' => $payload['payment_requirement'] ?? $agenda->payment_requirement,
             'is_published' => $payload['is_published'] ?? $agenda->is_published,
         ]);
+
+        // Sync Services (Surgical update to avoid FK violations)
+        $servicesData = $request->input('services', []);
+        $interval = $request->input('interval', 30);
+        $incomingServiceIds = [];
+
+        foreach ($servicesData as $serviceData) {
+            $price = $serviceData['isFree'] ? '0' : ($serviceData['price'] ?: '0');
+            $updateData = [
+                'provider_profile_id' => $profile->id,
+                'name' => $serviceData['name'],
+                'price_cents' => (int) (str_replace(',', '.', (string) $price) * 100),
+                'duration_minutes' => $interval,
+                'is_active' => true,
+            ];
+
+            // If it's an existing service (id is a small number, not a temporary timestamp)
+            if (isset($serviceData['id']) && $serviceData['id'] < 2000000000) {
+                $service = $agenda->services()->find($serviceData['id']);
+                if ($service) {
+                    $service->update($updateData);
+                    $incomingServiceIds[] = $service->id;
+                } else {
+                    $newService = $agenda->services()->create($updateData);
+                    $incomingServiceIds[] = $newService->id;
+                }
+            } else {
+                $newService = $agenda->services()->create($updateData);
+                $incomingServiceIds[] = $newService->id;
+            }
+        }
+
+        // Deactivate or delete services not in the request
+        $agenda->services()->whereNotIn('id', $incomingServiceIds)->get()->each(function ($service) {
+            try {
+                $service->delete();
+            } catch (\Exception $e) {
+                // If has bookings, just deactivate
+                $service->update(['is_active' => false]);
+            }
+        });
+
+        // Sync Availability Rules (These usually don't have FKs pointing to them, so delete/recreate is relatively safe)
+        $agenda->availabilityRules()->delete();
+        $weekdays = $request->input('weekdays', []);
+        $startTime = $request->input('startTime');
+        $endTime = $request->input('endTime');
+
+        $weekdayMap = ['seg' => 1, 'ter' => 2, 'qua' => 3, 'qui' => 4, 'sex' => 5, 'sab' => 6, 'dom' => 0];
+
+        foreach ($weekdays as $day) {
+            if (isset($weekdayMap[$day])) {
+                $agenda->availabilityRules()->create([
+                    'provider_profile_id' => $profile->id,
+                    'weekday' => $weekdayMap[$day],
+                    'starts_at' => $startTime,
+                    'ends_at' => $endTime,
+                    'is_active' => true,
+                ]);
+            }
+        }
 
         return redirect()->route('provider.agendas.index')->with('status', 'agenda-updated');
     }

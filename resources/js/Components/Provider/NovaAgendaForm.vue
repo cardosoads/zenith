@@ -18,6 +18,13 @@ import {
 } from 'lucide-vue-next';
 import { cn } from '@/lib/utils';
 
+const props = defineProps({
+    agenda: {
+        type: Object,
+        default: null
+    }
+});
+
 const emit = defineEmits(['close']);
 const { auth } = usePage().props;
 
@@ -32,18 +39,35 @@ const steps = [
     { id: 'confirmar', label: 'Confirmar', icon: Check },
 ];
 
+const WEEKDAY_MAP_REVERSE = {
+    1: 'seg',
+    2: 'ter',
+    3: 'qua',
+    4: 'qui',
+    5: 'sex',
+    6: 'sab',
+    0: 'dom'
+};
+
 const form = useForm({
-    name: '',
-    professional: '',
-    weekdays: ['seg', 'ter', 'qua', 'qui', 'sex'],
-    startTime: '08:00',
-    endTime: '18:00',
-    interval: 30,
-    services: [],
-    paymentType: 'none',
-    primaryColor: '#18181b',
-    secondaryColor: '#27272a',
-    slug: '',
+    name: props.agenda?.name || '',
+    professional: props.agenda?.provider_profile?.user?.name || '',
+    weekdays: props.agenda?.availability_rules 
+        ? [...new Set(props.agenda.availability_rules.map(r => WEEKDAY_MAP_REVERSE[r.weekday]))].filter(Boolean)
+        : ['seg', 'ter', 'qua', 'qui', 'sex'],
+    startTime: props.agenda?.availability_rules?.[0]?.starts_at?.substring(0, 5) || '08:00',
+    endTime: props.agenda?.availability_rules?.[0]?.ends_at?.substring(0, 5) || '18:00',
+    interval: props.agenda?.services?.[0]?.duration_minutes || 30,
+    services: props.agenda?.services?.map(s => ({
+        id: s.id,
+        name: s.name,
+        price: (s.price_cents / 100).toString().replace('.', ','),
+        isFree: s.price_cents === 0
+    })) || [],
+    payment_requirement: props.agenda?.payment_requirement || 'none',
+    primaryColor: props.agenda?.primary_color || '#18181b',
+    secondaryColor: props.agenda?.secondary_color || '#27272a',
+    slug: props.agenda?.slug || '',
     allowDocs: false,
     docsTitle: '',
 });
@@ -157,7 +181,16 @@ const prevStep = () => {
 const submit = () => {
     if (!form.name) return;
     form.slug = form.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
-    form.post(route('provider.agendas.store'), { onSuccess: () => emit('close') });
+    
+    if (props.agenda) {
+        form.put(route('provider.agendas.update', props.agenda.id), { 
+            onSuccess: () => emit('close') 
+        });
+    } else {
+        form.post(route('provider.agendas.store'), { 
+            onSuccess: () => emit('close') 
+        });
+    }
 };
 
 const mockupSlots = computed(() => {
@@ -194,8 +227,8 @@ const mockupSlots = computed(() => {
                     <ChevronLeft class="h-4 w-4" />
                 </button>
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight text-[#18181b]">Nova Agenda</h1>
-                    <p class="text-gray-400 text-sm mt-0.5">Configure os detalhes da nova agenda de atendimento.</p>
+                    <h1 class="text-xl font-bold tracking-tight text-[#18181b]">{{ agenda ? 'Editar Agenda' : 'Nova Agenda' }}</h1>
+                    <p class="text-gray-400 text-sm mt-0.5">{{ agenda ? 'Altere os detalhes da sua agenda de atendimento.' : 'Configure os detalhes da nova agenda de atendimento.' }}</p>
                 </div>
             </div>
 
@@ -266,7 +299,7 @@ const mockupSlots = computed(() => {
                         <div v-if="currentStepId === 'pagamento'" class="space-y-6">
                             <div><h2 class="text-lg font-bold text-[#18181b]">Pagamento para Confirmacao</h2><p class="text-gray-400 text-sm">Escolha se o cliente precisa pagar para confirmar o agendamento.</p></div>
                             <div class="space-y-3 max-w-lg">
-                                <div v-for="opt in [{ id: 'none', title: 'Sem pagamento antecipado', desc: 'O cliente agenda sem necessidade de pagamento. O pagamento e feito presencialmente.' },{ id: 'full', title: 'Pagamento integral', desc: 'O cliente paga 100% do valor do servico para confirmar o agendamento.' },{ id: 'half', title: '50% de sinal', desc: 'O cliente paga 50% do valor como sinal para confirmar. O restante e pago presencialmente.' }]" :key="opt.id" @click="form.paymentType = opt.id" :class="cn('flex items-center gap-4 p-5 rounded-xl border transition-all cursor-pointer group', form.paymentType === opt.id ? 'border-[#18181b] bg-white ring-1 ring-[#18181b]' : 'border-gray-100 hover:bg-gray-50')"><div :class="cn('h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all', form.paymentType === opt.id ? 'bg-[#18181b] border-[#18181b]' : 'border-gray-200 group-hover:border-gray-300')"><Check v-if="form.paymentType === opt.id" class="h-3 w-3 text-white" /></div><div><h3 class="text-sm font-bold text-[#18181b]">{{ opt.title }}</h3><p class="text-gray-400 text-xs mt-0.5 leading-relaxed">{{ opt.desc }}</p></div></div>
+                                <div v-for="opt in [{ id: 'none', title: 'Sem pagamento antecipado', desc: 'O cliente agenda sem necessidade de pagamento. O pagamento e feito presencialmente.' },{ id: 'full', title: 'Pagamento integral', desc: 'O cliente paga 100% do valor do servico para confirmar o agendamento.' },{ id: 'half', title: '50% de sinal', desc: 'O cliente paga 50% do valor como sinal para confirmar. O restante e pago presencialmente.' }]" :key="opt.id" @click="form.payment_requirement = opt.id" :class="cn('flex items-center gap-4 p-5 rounded-xl border transition-all cursor-pointer group', form.payment_requirement === opt.id ? 'border-[#18181b] bg-white ring-1 ring-[#18181b]' : 'border-gray-100 hover:bg-gray-50')"><div :class="cn('h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all', form.payment_requirement === opt.id ? 'bg-[#18181b] border-[#18181b]' : 'border-gray-200 group-hover:border-gray-300')"><Check v-if="form.payment_requirement === opt.id" class="h-3 w-3 text-white" /></div><div><h3 class="text-sm font-bold text-[#18181b]">{{ opt.title }}</h3><p class="text-gray-400 text-xs mt-0.5 leading-relaxed">{{ opt.desc }}</p></div></div>
                             </div>
                         </div>
 
@@ -285,7 +318,7 @@ const mockupSlots = computed(() => {
                                 <div class="p-4 rounded-xl border border-gray-100 bg-white"><span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">INFORMACOES</span><div class="flex justify-between py-1"><span class="text-xs text-gray-500 font-medium">Nome</span><span class="text-xs font-bold text-[#18181b]">{{ form.name || '---' }}</span></div><div class="flex justify-between py-1"><span class="text-xs text-gray-500 font-medium">Profissional</span><span class="text-xs font-bold text-[#18181b]">{{ form.professional || '---' }}</span></div></div>
                                 <div class="p-4 rounded-xl border border-gray-100 bg-white"><span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">SERVICOS ({{ form.services.length }})</span><div v-for="s in form.services" :key="s.id" class="flex justify-between py-1"><span class="text-xs text-[#18181b] font-bold">{{ s.name || '---' }}</span><span :class="cn('text-xs font-bold', s.isFree ? 'text-[#10b981]' : 'text-[#18181b]')">{{ s.isFree ? 'Gratuito' : `R$ ${s.price || '0,00'}` }}</span></div></div>
                                 <div class="p-4 rounded-xl border border-gray-100 bg-white"><span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">HORARIO</span><div class="flex justify-between py-1"><span class="text-xs text-gray-500 font-medium">Dias</span><span class="text-xs font-bold text-[#18181b]">{{ form.weekdays.map(d => WEEKDAY_LABELS[d]).join(', ') }}</span></div><div class="flex justify-between py-1"><span class="text-xs text-gray-500 font-medium">Horario</span><span class="text-xs font-bold text-[#18181b]">{{ form.startTime }} - {{ form.endTime }}</span></div></div>
-                                 <div class="p-4 rounded-xl border border-gray-100 bg-white"><span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">PAGAMENTO</span><span class="text-xs font-bold text-[#18181b]">{{ PAYMENT_LABELS[form.paymentType] }}</span></div>
+                                 <div class="p-4 rounded-xl border border-gray-100 bg-white"><span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">PAGAMENTO</span><span class="text-xs font-bold text-[#18181b]">{{ PAYMENT_LABELS[form.payment_requirement] }}</span></div>
                                  <div v-if="form.allowDocs" class="p-4 rounded-xl border border-gray-100 bg-white shadow-sm ring-1 ring-[#10b981]/10">
                                      <span class="text-[10px] font-bold text-[#10b981] uppercase tracking-widest block mb-2">DOCUMENTO SOLICITADO</span>
                                      <span class="text-xs font-bold text-[#18181b]">{{ form.docsTitle || 'Sem título' }}</span>
@@ -298,7 +331,7 @@ const mockupSlots = computed(() => {
                     <div class="flex items-center justify-between">
                         <button @click="prevStep" class="flex items-center gap-2 h-10 px-6 bg-white border border-gray-100 rounded-lg text-xs font-bold text-[#18181b] hover:bg-gray-50 transition-all shadow-sm"><ChevronLeft class="h-4 w-4" />Voltar</button>
                         <button v-if="currentStepId !== 'confirmar'" @click="nextStep" class="flex items-center justify-center gap-2 h-10 px-8 bg-black text-white rounded-lg text-xs font-bold hover:bg-black/90 transition-all shadow-sm group">Proximo<ChevronRight class="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></button>
-                        <button v-else @click="submit" class="flex items-center justify-center gap-2 h-11 px-10 bg-black text-white rounded-xl text-sm font-bold hover:bg-black/90 transition-all shadow-xl group">Criar Agenda<Check class="h-4.5 w-4.5 ml-1 transition-transform group-hover:scale-110" /></button>
+                        <button v-else @click="submit" class="flex items-center justify-center gap-2 h-11 px-10 bg-black text-white rounded-xl text-sm font-bold hover:bg-black/90 transition-all shadow-xl group">{{ agenda ? 'Salvar Alterações' : 'Criar Agenda' }}<Check class="h-4.5 w-4.5 ml-1 transition-transform group-hover:scale-110" /></button>
                     </div>
                 </div>
 
@@ -580,7 +613,7 @@ const mockupSlots = computed(() => {
                                     Seu agendamento para <strong>{{ selectedMockupDateFormatted }}</strong> às <strong>{{ mockupTime }}</strong> foi realizado com sucesso.
                                 </p>
                                 
-                                <div v-if="form.paymentType !== 'none'" class="w-full p-5 rounded-2xl bg-gray-50 border border-gray-100 mb-10 text-left">
+                                <div v-if="form.payment_requirement !== 'none'" class="w-full p-5 rounded-2xl bg-gray-50 border border-gray-100 mb-10 text-left">
                                     <div class="flex items-center gap-3 mb-2">
                                         <CreditCard class="h-4 w-4 text-blue-500" />
                                         <span class="text-xs font-bold text-[#18181b]">Pagamento Pendente</span>

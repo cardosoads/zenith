@@ -18,7 +18,7 @@ class StoreBookingRequest extends FormRequest
             'starts_at' => ['required', 'date'],
             'customer_name' => ['required', 'string', 'max:120'],
             'customer_email' => ['required', 'email', 'max:160'],
-            'customer_phone' => ['nullable', 'string', 'max:30'],
+            'customer_phone' => ['required', 'string', 'max:30'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
             'attachments' => ['nullable', 'array', 'max:5'],
             'attachments.*' => ['file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,doc,docx'],

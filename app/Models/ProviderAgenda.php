@@ -26,6 +26,9 @@ class ProviderAgenda extends Model
         'preset',
         'customer_extra_fields',
         'embed_height',
+        'primary_color',
+        'secondary_color',
+        'payment_requirement',
     ];
 
     protected function casts(): array

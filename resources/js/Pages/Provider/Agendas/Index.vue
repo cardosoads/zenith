@@ -33,10 +33,25 @@ const props = defineProps({
 
 const openMenu = ref(null);
 const showNewForm = ref(false);
+const editingAgenda = ref(null);
 const showEmbedModal = ref(false);
 const embedCode = ref('');
 const copiedLink = ref(null);
 const copiedEmbed = ref(false);
+
+const editAgenda = (id) => {
+    const agenda = props.agendas.find(a => a.id === id);
+    if (agenda) {
+        editingAgenda.value = agenda;
+        showNewForm.value = true;
+        openMenu.value = null;
+    }
+};
+
+const closeForm = () => {
+    showNewForm.value = false;
+    editingAgenda.value = null;
+};
 
 const WEEKDAY_LABELS = {
   seg: "Seg",
@@ -101,18 +116,44 @@ const deleteAgenda = (id) => {
 };
 
 const copyLink = (schedule) => {
+    // Garantir URL absoluta usando Ziggy
     const url = route('widget.show', { 
         providerProfile: props.providerProfile.slug, 
         agenda: schedule.slug 
-    });
+    }, true);
     
-    navigator.clipboard.writeText(url);
-    copiedLink.value = schedule.id;
+    const fallbackCopy = (text) => {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            copiedLink.value = schedule.id;
+        } catch (err) {
+            console.error('Erro ao copiar fallback:', err);
+        }
+        document.body.removeChild(textArea);
+    };
+
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(url).then(() => {
+            copiedLink.value = schedule.id;
+        }).catch(() => {
+            fallbackCopy(url);
+        });
+    } else {
+        fallbackCopy(url);
+    }
     
     setTimeout(() => {
         copiedLink.value = null;
         openMenu.value = null;
-    }, 1000);
+    }, 2000);
 };
 
 const openEmbedModalFn = (schedule) => {
@@ -153,7 +194,8 @@ const stats = computed(() => [
     <AuthenticatedLayout>
         <template v-if="showNewForm">
             <NovaAgendaForm 
-                @close="showNewForm = false" 
+                :agenda="editingAgenda"
+                @close="closeForm" 
             />
         </template>
 
@@ -229,7 +271,7 @@ const stats = computed(() => [
                             </button>
                             <div v-if="openMenu === schedule.id" class="absolute right-0 top-9 z-10 w-48 rounded-md border border-border bg-popover py-1 shadow-lg">
                                 <button
-                                    @click="openMenu = null"
+                                    @click="editAgenda(schedule.id)"
                                     class="flex w-full items-center gap-2 px-3 py-2 text-xs text-foreground transition-colors hover:bg-accent"
                                 >
                                     <Pencil class="h-3.5 w-3.5" />

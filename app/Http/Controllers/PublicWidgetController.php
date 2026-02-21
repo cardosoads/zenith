@@ -89,13 +89,15 @@ class PublicWidgetController extends Controller
             ->where('provider_agenda_id', $agenda->id)
             ->findOrFail($payload['service_id']);
 
+        $requiresPayment = in_array($agenda->payment_requirement, ['full', 'half']) && $service->price_cents > 0;
+
         return response()->json([
             'provider' => $providerProfile->display_name,
             'agenda' => $agenda->only(['id', 'name', 'slug']),
             'service' => $service,
             'starts_at' => $payload['starts_at'],
             'price_cents' => $service->price_cents,
-            'is_paid' => $service->price_cents > 0,
+            'is_paid' => $requiresPayment,
         ]);
     }
 
@@ -153,8 +155,8 @@ class PublicWidgetController extends Controller
 
             foreach (($request->file('attachments') ?? []) as $attachmentFile) {
                 $path = $attachmentFile->storeAs(
-                    'booking-attachments/'.$booking->id,
-                    Str::uuid().'-'.$attachmentFile->getClientOriginalName(),
+                    'booking-attachments/' . $booking->id,
+                    Str::uuid() . '-' . $attachmentFile->getClientOriginalName(),
                     'public'
                 );
 
@@ -166,7 +168,9 @@ class PublicWidgetController extends Controller
                 ]);
             }
 
-            if ($service->price_cents > 0) {
+            $requiresPayment = in_array($agenda->payment_requirement, ['full', 'half']) && $service->price_cents > 0;
+
+            if ($requiresPayment) {
                 $charge = $pixProvider->createCharge($booking);
 
                 BookingPayment::query()->create([
