@@ -1,3 +1,11 @@
+# ---- Composer stage: install PHP deps ----
+FROM composer:2 AS vendor
+
+WORKDIR /app
+
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-interaction --no-progress --prefer-dist --no-scripts --no-autoloader
+
 # ---- Build stage: frontend assets ----
 FROM node:22-alpine AS frontend
 
@@ -8,6 +16,9 @@ RUN npm ci
 
 COPY vite.config.js tailwind.config.js postcss.config.js jsconfig.json ./
 COPY resources/ resources/
+
+# Ziggy is imported from vendor in app.js
+COPY --from=vendor /app/vendor/tightenco/ziggy vendor/tightenco/ziggy
 
 RUN npm run build
 
@@ -50,11 +61,10 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy composer files first for layer caching
+# Copy composer files and install deps
 COPY composer.json composer.lock ./
-
-# Install PHP dependencies (no dev)
-RUN composer install --no-dev --no-interaction --no-progress --optimize-autoloader --no-scripts
+COPY --from=vendor /app/vendor vendor
+RUN composer dump-autoload --optimize --no-dev
 
 # Copy application code
 COPY . .
