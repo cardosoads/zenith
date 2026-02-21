@@ -8,6 +8,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmbedController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PixWebhookController;
 use App\Http\Controllers\ProfileController;
@@ -24,6 +25,8 @@ use Inertia\Inertia;
 Route::get('/', function () {
     return Inertia::render('Landing');
 })->name('home');
+
+Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
 
 Route::get('/embed/widget.js', [EmbedController::class, 'script'])->name('embed.script');
 

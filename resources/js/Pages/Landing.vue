@@ -80,8 +80,8 @@ const PLANS = [
             "Suporte por email",
         ],
         highlighted: false,
-        cta: "Começar Agora",
-        href: route('register'),
+        cta: "Criar Conta",
+        href: route('checkout.show'),
     },
     {
         name: "Profissional",
@@ -97,8 +97,8 @@ const PLANS = [
             "Personalização de marca",
         ],
         highlighted: true,
-        cta: "Assinar Agora",
-        href: route('register'),
+        cta: "Criar Conta",
+        href: route('checkout.show'),
     },
     {
         name: "Empresa",
@@ -115,8 +115,8 @@ const PLANS = [
             "Gerente de conta dedicado",
         ],
         highlighted: false,
-        cta: "Falar com Vendas",
-        href: route('register'),
+        cta: "Criar Conta",
+        href: route('checkout.show'),
     },
 ]
 
@@ -209,10 +209,10 @@ const toggleFaq = (index) => {
                         Entrar
                     </Link>
                     <Link
-                        :href="route('register')"
+                        :href="route('checkout.show')"
                         class="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90"
                     >
-                        Começar Grátis
+                        Criar Conta
                     </Link>
                 </div>
 
@@ -243,11 +243,11 @@ const toggleFaq = (index) => {
                             Entrar
                         </Link>
                         <Link
-                            :href="route('register')"
+                            :href="route('checkout.show')"
                             class="rounded-lg bg-foreground px-4 py-2.5 text-center text-sm font-medium text-background"
                             @click="mobileMenuOpen = false"
                         >
-                            Começar Grátis
+                            Criar Conta
                         </Link>
                     </div>
                 </div>
@@ -275,10 +275,10 @@ const toggleFaq = (index) => {
 
                 <div class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
                     <Link
-                        :href="route('register')"
+                        :href="route('checkout.show')"
                         class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-foreground px-6 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90 sm:w-auto"
                     >
-                        Começar Grátis
+                        Criar Conta
                         <ArrowRight class="h-4 w-4" />
                     </Link>
                     <a
@@ -507,10 +507,10 @@ const toggleFaq = (index) => {
                 </p>
                 <div class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
                     <Link
-                        :href="route('register')"
+                        :href="route('checkout.show')"
                         class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-foreground px-8 py-3.5 text-sm font-semibold text-background transition-opacity hover:opacity-90 sm:w-auto shadow-lg shadow-foreground/10"
                     >
-                        Começar Teste Grátis
+                        Criar Conta
                         <ArrowRight class="h-4 w-4" />
                     </Link>
                 </div>
