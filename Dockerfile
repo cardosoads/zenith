@@ -61,6 +61,9 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
+# Cache bust - change this value to force a fresh build
+ARG CACHE_BUST=1
+
 # Copy application code first (artisan is needed for post-autoload-dump)
 COPY . .
 
