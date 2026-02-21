@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\BillingProviderInterface;
+use App\Models\PaymentSetting;
 use App\Models\Plan;
 use App\Models\ProviderProfile;
 use App\Models\ProviderSubscription;
 use App\ProviderStatus;
 use App\SubscriptionStatus;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -19,15 +21,17 @@ class OnboardingController extends Controller
     public function show(Request $request): Response
     {
         $profile = $request->user()->providerProfile;
+        $settings = PaymentSetting::instance();
 
         return Inertia::render('Onboarding/Show', [
             'profile' => $profile,
             'plans' => Plan::query()->where('is_active', true)->get(),
             'subscription' => $profile?->currentSubscription,
+            'stripePublicKey' => $settings->hasStripeKeys() ? $settings->stripe_public_key : null,
         ]);
     }
 
-    public function checkout(Request $request, BillingProviderInterface $billingProvider): RedirectResponse
+    public function checkout(Request $request, BillingProviderInterface $billingProvider): JsonResponse
     {
         $payload = $request->validate([
             'plan_id' => ['required', 'exists:plans,id'],
@@ -48,17 +52,20 @@ class OnboardingController extends Controller
             ]);
         }
 
-        $checkout = $billingProvider->createCheckout($profile, $plan);
+        $result = $billingProvider->createSubscription($profile, $plan, $user);
 
         ProviderSubscription::query()->create([
             'provider_profile_id' => $profile->id,
             'plan_id' => $plan->id,
-            'payment_provider' => 'abacate',
-            'external_id' => $checkout['external_id'],
+            'payment_provider' => 'stripe',
+            'external_id' => $result['external_id'],
             'status' => SubscriptionStatus::Pending,
         ]);
 
-        return redirect()->route('onboarding.show')->with('status', 'checkout-created');
+        return response()->json([
+            'client_secret' => $result['client_secret'],
+            'subscription_id' => $result['external_id'],
+        ]);
     }
 
     public function confirm(Request $request): RedirectResponse

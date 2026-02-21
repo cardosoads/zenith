@@ -1,10 +1,10 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { Head, Link, useForm } from '@inertiajs/vue3'
+import { Head, Link, useForm, router } from '@inertiajs/vue3'
+import StripeCardElement from '@/Components/Payment/StripeCardElement.vue'
 import {
     ArrowLeft,
     Check,
-    CreditCard,
     Lock,
     Shield,
     Zap,
@@ -17,6 +17,10 @@ const props = defineProps({
     plans: {
         type: Array,
         default: () => [],
+    },
+    stripePublicKey: {
+        type: String,
+        default: null,
     },
 })
 
@@ -106,10 +110,6 @@ const form = useForm({
     business_name: '',
     password: '',
     password_confirmation: '',
-    card_number: '',
-    card_name: '',
-    card_expiry: '',
-    card_cvv: '',
 })
 
 // Keep plan_id in sync with selectedPlanId
@@ -136,9 +136,60 @@ const passwordsMatch = computed(
     () => form.password === form.password_confirmation && form.password_confirmation.length > 0,
 )
 
-// ── Submit ───────────────────────────────────────────────────────────────────
-const submit = () => {
-    form.post(route('checkout.store'))
+// ── Stripe Payment ──────────────────────────────────────────────────────────
+const stripeCardRef = ref(null)
+const paymentProcessing = ref(false)
+const paymentError = ref(null)
+
+const submit = async () => {
+    paymentError.value = null
+    paymentProcessing.value = true
+
+    try {
+        const response = await fetch(route('checkout.store'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                Accept: 'application/json',
+            },
+            body: JSON.stringify(form.data()),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+            if (data.errors) {
+                form.clearErrors()
+                Object.keys(data.errors).forEach((key) => {
+                    form.setError(key, data.errors[key][0])
+                })
+            } else {
+                paymentError.value = data.message || 'Erro ao processar. Tente novamente.'
+            }
+            paymentProcessing.value = false
+            return
+        }
+
+        if (data.client_secret && stripeCardRef.value) {
+            const result = await stripeCardRef.value.confirm(data.client_secret)
+
+            if (!result.success) {
+                paymentError.value = result.error?.message || 'Erro no pagamento.'
+                paymentProcessing.value = false
+                return
+            }
+        }
+
+        router.post(route('checkout.confirm'), {}, {
+            onFinish: () => {
+                paymentProcessing.value = false
+            },
+        })
+    } catch (e) {
+        paymentError.value = 'Erro inesperado. Tente novamente.'
+        paymentProcessing.value = false
+    }
 }
 </script>
 
@@ -500,101 +551,32 @@ const submit = () => {
                         <h2 class="mb-4 text-lg font-semibold text-foreground">
                             Dados de pagamento
                         </h2>
-                        <div class="rounded-xl border border-border bg-card p-5">
-                            <div class="mb-4 flex items-center gap-2">
-                                <CreditCard class="h-4 w-4 text-muted-foreground" />
-                                <span class="text-xs font-medium text-muted-foreground">
-                                    Cartão de crédito ou débito
-                                </span>
-                                <div class="ml-auto flex items-center gap-1">
-                                    <div
-                                        class="flex h-5 w-8 items-center justify-center rounded bg-[#1a1f71]"
-                                    >
-                                        <span class="text-[7px] font-bold italic text-white">VISA</span>
-                                    </div>
-                                    <div
-                                        class="flex h-5 w-8 items-center justify-center rounded bg-[#eb001b]/90"
-                                    >
-                                        <span class="text-[7px] font-bold text-white">MC</span>
-                                    </div>
-                                </div>
-                            </div>
 
-                            <div class="flex flex-col gap-4">
-                                <!-- Card number -->
-                                <div class="flex flex-col gap-1.5">
-                                    <label class="text-xs font-medium text-muted-foreground">
-                                        Número do cartão
-                                    </label>
-                                    <input
-                                        v-model="form.card_number"
-                                        type="text"
-                                        placeholder="0000 0000 0000 0000"
-                                        maxlength="19"
-                                        class="rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-foreground"
-                                    />
-                                </div>
+                        <StripeCardElement
+                            v-if="stripePublicKey"
+                            ref="stripeCardRef"
+                            :stripe-public-key="stripePublicKey"
+                        />
 
-                                <!-- Card name -->
-                                <div class="flex flex-col gap-1.5">
-                                    <label class="text-xs font-medium text-muted-foreground">
-                                        Nome no cartão
-                                    </label>
-                                    <input
-                                        v-model="form.card_name"
-                                        type="text"
-                                        placeholder="Como aparece no cartão"
-                                        class="rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-foreground"
-                                    />
-                                </div>
-
-                                <!-- Expiry + CVV -->
-                                <div class="flex gap-4">
-                                    <div class="flex flex-1 flex-col gap-1.5">
-                                        <label class="text-xs font-medium text-muted-foreground">
-                                            Validade
-                                        </label>
-                                        <input
-                                            v-model="form.card_expiry"
-                                            type="text"
-                                            placeholder="MM/AA"
-                                            maxlength="5"
-                                            class="rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-foreground"
-                                        />
-                                    </div>
-                                    <div class="flex flex-1 flex-col gap-1.5">
-                                        <label class="text-xs font-medium text-muted-foreground">
-                                            CVV
-                                        </label>
-                                        <input
-                                            v-model="form.card_cvv"
-                                            type="text"
-                                            placeholder="000"
-                                            maxlength="4"
-                                            class="rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-foreground"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 flex items-center gap-2 rounded-lg bg-accent/50 px-3 py-2">
-                                <Shield class="h-3.5 w-3.5 text-emerald-500" />
-                                <span class="text-[10px] text-muted-foreground">
-                                    Pagamento processado de forma segura via Stripe. Seus dados
-                                    nunca são armazenados em nossos servidores.
-                                </span>
-                            </div>
+                        <div v-else class="rounded-xl border border-border bg-card p-5">
+                            <p class="text-sm text-muted-foreground text-center py-4">
+                                Pagamento via cartão não está disponível no momento.
+                            </p>
                         </div>
+
+                        <p v-if="paymentError" class="mt-2 text-sm text-red-400">
+                            {{ paymentError }}
+                        </p>
                     </section>
 
                     <!-- Submit button (mobile) -->
                     <div class="lg:hidden">
                         <button
                             type="submit"
-                            :disabled="form.processing"
+                            :disabled="paymentProcessing"
                             class="w-full rounded-lg bg-foreground py-3.5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
                         >
-                            <span v-if="form.processing">Processando…</span>
+                            <span v-if="paymentProcessing">Processando...</span>
                             <span v-else>Assinar — R$ {{ planPrice }},00/mês</span>
                         </button>
                         <p class="mt-3 text-center text-[10px] text-muted-foreground">
@@ -687,10 +669,10 @@ const submit = () => {
                         <div class="mt-6 hidden lg:block">
                             <button
                                 type="submit"
-                                :disabled="form.processing"
+                                :disabled="paymentProcessing"
                                 class="w-full rounded-lg bg-foreground py-3.5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
                             >
-                                <span v-if="form.processing">Processando…</span>
+                                <span v-if="paymentProcessing">Processando...</span>
                                 <span v-else>Assinar — R$ {{ planPrice }},00/mês</span>
                             </button>
                             <p class="mt-3 text-center text-[10px] text-muted-foreground">

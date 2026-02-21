@@ -4,17 +4,19 @@ namespace App\Contracts;
 
 use App\Models\Plan;
 use App\Models\ProviderProfile;
+use App\Models\User;
 
 interface BillingProviderInterface
 {
     /**
-     * @return array{checkout_url:string,external_id:string,status:string}
+     * @return array{client_secret:string|null,external_id:string,status:string,customer_id:string|null}
      */
-    public function createCheckout(ProviderProfile $providerProfile, Plan $plan): array;
+    public function createSubscription(ProviderProfile $providerProfile, Plan $plan, User $user): array;
 
     /**
-     * @param  array<string, mixed>  $payload
-     * @return array{external_id:string,status:string}
+     * @param  string  $payload  Raw request body
+     * @param  array<string, string>  $headers
+     * @return array{event_type:string,external_id:string,status:string}
      */
-    public function parseWebhookPayload(array $payload): array;
+    public function parseWebhookPayload(string $payload, array $headers = []): array;
 }
