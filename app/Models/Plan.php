@@ -17,6 +17,7 @@ class Plan extends Model
         'billing_cycle',
         'is_active',
         'description',
+        'stripe_price_id',
     ];
 
     protected function casts(): array

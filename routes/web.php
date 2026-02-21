@@ -1,14 +1,15 @@
 <?php
 
+use App\Http\Controllers\Admin\PaymentSettingsController;
 use App\Http\Controllers\Admin\ProviderManagementController;
 use App\Http\Controllers\AvailabilityRuleController;
 use App\Http\Controllers\BillingWebhookController;
 use App\Http\Controllers\BookingAttachmentController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmbedController;
-use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PixWebhookController;
 use App\Http\Controllers\ProfileController;
@@ -27,6 +28,8 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
+Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+Route::post('/checkout/confirm', [CheckoutController::class, 'confirm'])->middleware(['auth'])->name('checkout.confirm');
 
 Route::get('/embed/widget.js', [EmbedController::class, 'script'])->name('embed.script');
 
@@ -89,6 +92,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/providers', [ProviderManagementController::class, 'index'])->name('providers.index');
         Route::post('/providers/{providerProfile}/activate', [ProviderManagementController::class, 'activate'])->name('providers.activate');
         Route::post('/providers/{providerProfile}/suspend', [ProviderManagementController::class, 'suspend'])->name('providers.suspend');
+
+        Route::get('/payment-settings', [PaymentSettingsController::class, 'index'])->name('payment-settings.index');
+        Route::patch('/payment-settings', [PaymentSettingsController::class, 'update'])->name('payment-settings.update');
     });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -96,4 +102,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

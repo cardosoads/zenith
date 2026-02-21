@@ -25,6 +25,7 @@ class ProviderProfile extends Model
         'pix_key_type',
         'pix_holder_name',
         'pix_holder_document',
+        'stripe_customer_id',
     ];
 
     protected function casts(): array

@@ -54,6 +54,7 @@ const navItems = computed(() => {
         return [
             { label: 'Dashboard', route: 'dashboard', icon: LayoutDashboard },
             { label: 'Prestadores', route: 'admin.providers.index', icon: ShieldUser },
+            { label: 'Pagamentos', route: 'admin.payment-settings.index', icon: CreditCard },
         ];
     }
 
