@@ -18,8 +18,6 @@ FROM php:8.4-fpm-alpine
 RUN apk add --no-cache \
     nginx \
     supervisor \
-    sqlite \
-    sqlite-dev \
     postgresql-dev \
     libpng-dev \
     libjpeg-turbo-dev \
@@ -34,8 +32,6 @@ RUN apk add --no-cache \
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
-        pdo_sqlite \
-        pdo_mysql \
         pdo_pgsql \
         gd \
         zip \
@@ -76,9 +72,8 @@ RUN mkdir -p storage/logs \
     storage/framework/views \
     storage/app/public \
     bootstrap/cache \
-    database \
-    && chown -R www-data:www-data storage bootstrap/cache database \
-    && chmod -R 775 storage bootstrap/cache database
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
 
 # Copy deploy configs
 COPY deploy/nginx.conf /etc/nginx/http.d/default.conf

@@ -4,13 +4,20 @@ set -e
 cd /var/www/html
 
 # Ensure storage directories have correct permissions
-chown -R www-data:www-data storage bootstrap/cache database
-chmod -R 775 storage bootstrap/cache database
+chown -R www-data:www-data storage bootstrap/cache
+chmod -R 775 storage bootstrap/cache
 
-# Create SQLite database if it doesn't exist
-if [ ! -f database/database.sqlite ]; then
-    touch database/database.sqlite
-    chown www-data:www-data database/database.sqlite
+# Wait for PostgreSQL to be ready
+if [ "$DB_CONNECTION" = "pgsql" ]; then
+    echo "Waiting for PostgreSQL at $DB_HOST:$DB_PORT..."
+    for i in $(seq 1 30); do
+        if php -r "try { new PDO('pgsql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT') . ';dbname=' . getenv('DB_DATABASE'), getenv('DB_USERNAME'), getenv('DB_PASSWORD')); echo 'ok'; } catch (Exception \$e) { exit(1); }" 2>/dev/null; then
+            echo "PostgreSQL is ready."
+            break
+        fi
+        echo "Attempt $i/30 - PostgreSQL not ready, retrying in 2s..."
+        sleep 2
+    done
 fi
 
 # Generate APP_KEY if not set
