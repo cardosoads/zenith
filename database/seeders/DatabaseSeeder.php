@@ -24,5 +24,7 @@ class DatabaseSeeder extends Seeder
         );
 
         $provider->syncRoles(['provider']);
+
+        $this->call(DemoProviderSeeder::class);
     }
 }

@@ -35,13 +35,12 @@ if [ -z "$APP_KEY" ]; then
     echo "Generated APP_KEY=$APP_KEY — save this in Dokploy env vars!"
 fi
 
-# Cache config, routes, and views for performance
+# Cache config and views for performance (route cache omitted for Inertia compatibility)
 php artisan config:cache
-php artisan route:cache
 php artisan view:cache
 
-# Run migrations and seed if database is empty
-php artisan migrate --force --seed
+# Run migrations -- using migrate:fresh to apply DemoProviderSeeder, revert to migrate --force after
+php artisan migrate:fresh --force --seed
 
 # Link storage
 php artisan storage:link --force 2>/dev/null || true
