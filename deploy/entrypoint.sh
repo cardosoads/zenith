@@ -40,8 +40,8 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# Run migrations -- using migrate:fresh to reset broken state, revert to migrate --force after first successful deploy
-php artisan migrate:fresh --force --seed
+# Run migrations
+php artisan migrate --force
 
 # Link storage
 php artisan storage:link --force 2>/dev/null || true
