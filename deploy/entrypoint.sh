@@ -40,8 +40,8 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# Run migrations
-php artisan migrate --force
+# Run migrations and seed if database is empty
+php artisan migrate --force --seed
 
 # Link storage
 php artisan storage:link --force 2>/dev/null || true
