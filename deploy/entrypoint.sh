@@ -20,9 +20,16 @@ if [ "$DB_CONNECTION" = "pgsql" ]; then
     done
 fi
 
+# Create .env file from environment variables (Dokploy injects via env, not file)
+if [ ! -f .env ]; then
+    touch .env
+fi
+
 # Generate APP_KEY if not set
 if [ -z "$APP_KEY" ]; then
     php artisan key:generate --force
+    # Export the generated key so Laravel picks it up
+    export APP_KEY=$(grep APP_KEY .env | cut -d '=' -f2-)
 fi
 
 # Cache config, routes, and views for performance
