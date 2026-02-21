@@ -61,19 +61,15 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy composer files and install deps
-COPY composer.json composer.lock ./
+# Copy application code first (artisan is needed for post-autoload-dump)
+COPY . .
+
+# Copy vendor from composer stage and regenerate autoload
 COPY --from=vendor /app/vendor vendor
 RUN composer dump-autoload --optimize --no-dev
 
-# Copy application code
-COPY . .
-
 # Copy built frontend assets from build stage
 COPY --from=frontend /app/public/build public/build
-
-# Run post-install scripts
-RUN composer run-script post-autoload-dump
 
 # Ensure storage & cache directories exist with correct permissions
 RUN mkdir -p storage/logs \
