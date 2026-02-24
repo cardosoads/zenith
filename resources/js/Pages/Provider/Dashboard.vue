@@ -41,7 +41,7 @@ const transformedActivities = computed(() => {
         return {
             customer_name: booking.customer_name,
             service: booking.service?.name || 'Serviço',
-            status: booking.status,
+            status: booking.status === 'cancelled' ? 'cancelado' : booking.status,
             time: new Date(booking.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
         };
     });

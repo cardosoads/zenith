@@ -11,7 +11,8 @@ defineProps({
 const getStatusIcon = (status) => {
     switch (status) {
         case 'confirmed': return CheckCircle2;
-        case 'cancelled': return XCircle;
+        case 'cancelled':
+        case 'cancelado': return XCircle;
         default: return Clock;
     }
 };
@@ -19,7 +20,8 @@ const getStatusIcon = (status) => {
 const getStatusClass = (status) => {
     switch (status) {
         case 'confirmed': return 'text-emerald-500';
-        case 'cancelled': return 'text-rose-500';
+        case 'cancelled':
+        case 'cancelado': return 'text-rose-500';
         default: return 'text-amber-500';
     }
 };
@@ -44,7 +46,10 @@ const getStatusClass = (status) => {
                     <div class="flex flex-col gap-0.5">
                         <p class="text-sm text-foreground">
                             <span class="font-medium">{{ activity.customer_name }}</span>
-                            {{ activity.status === 'confirmed' ? ' confirmou um ' : ' solicitou um ' }}
+                            {{ 
+                                activity.status === 'confirmed' ? ' confirmou um ' : 
+                                (activity.status === 'cancelled' || activity.status === 'cancelado') ? ' cancelou o ' : ' solicitou um ' 
+                            }}
                             agendamento de <span class="font-medium">{{ activity.service }}</span>
                         </p>
                         <span class="text-xs text-muted-foreground">{{ activity.time }}</span>
