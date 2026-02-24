@@ -44,7 +44,12 @@ const formatTime = (dateString) => {
                     </div>
                 </div>
                 <Badge :tone="item.status === 'confirmed' ? 'success' : 'warning'">
-                    {{ item.status }}
+                    {{ 
+                        item.status === 'confirmed' ? 'Confirmado' : 
+                        item.status === 'pending' ? 'Pendente' : 
+                        item.status === 'cancelled' ? 'Cancelado' : 
+                        item.status 
+                    }}
                 </Badge>
             </div>
             <div v-if="!appointments.length" class="flex flex-col items-center justify-center py-12 text-center">

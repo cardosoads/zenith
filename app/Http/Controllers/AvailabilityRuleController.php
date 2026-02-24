@@ -33,6 +33,7 @@ class AvailabilityRuleController extends Controller
         $bookings = $selectedAgenda
             ? $selectedAgenda->bookings()
                 ->with('service:id,name')
+                ->whereNotIn('status', ['cancelled', 'expired'])
                 ->whereBetween('starts_at', [$startDate, $endDate])
                 ->orderBy('starts_at')
                 ->get()

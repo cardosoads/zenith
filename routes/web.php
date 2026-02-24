@@ -42,6 +42,9 @@ Route::prefix('/w/{providerProfile:slug}/{agenda:slug}')
         Route::post('/bookings/preview', [PublicWidgetController::class, 'preview'])->name('widget.bookings.preview');
         Route::post('/bookings/confirm', [PublicWidgetController::class, 'confirm'])->name('widget.bookings.confirm');
         Route::get('/bookings/{booking}/payment', [PublicWidgetController::class, 'payment'])->name('widget.bookings.payment');
+        Route::post('/bookings/search', [PublicWidgetController::class, 'search'])->name('widget.bookings.search');
+        Route::post('/bookings/{booking}/cancel', [PublicWidgetController::class, 'cancel'])->name('widget.bookings.cancel');
+        Route::post('/bookings/{booking}/reschedule', [PublicWidgetController::class, 'reschedule'])->name('widget.bookings.reschedule');
     });
 
 Route::post('/webhooks/billing/{provider}', BillingWebhookController::class)->name('webhooks.billing');
@@ -102,4 +105,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

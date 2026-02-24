@@ -1,6 +1,7 @@
 <script setup>
 import InputLabel from '@/Components/InputLabel.vue';
 import Modal from '@/Components/UI/Modal.vue';
+import FeedbackModal from '@/Components/UI/FeedbackModal.vue';
 import { Head } from '@inertiajs/vue3';
 import { computed, onMounted, ref, watch } from 'vue';
 import axios from 'axios';
@@ -22,6 +23,9 @@ import {
     Loader2,
     Scissors,
     CreditCard,
+    Search,
+    CalendarSearch,
+    X,
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -44,6 +48,45 @@ const slotsModalOpen = ref(false);
 const selectedFiles = ref([]);
 const submitting = ref(false);
 const copiedPix = ref(false);
+const searchModalOpen = ref(false);
+const searchForm = ref({ email: '', phone: '' });
+const searchResults = ref([]);
+const searching = ref(false);
+const searchError = ref(null);
+const reschedulingBooking = ref(null);
+
+const feedback = ref({
+    open: false,
+    title: '',
+    message: '',
+    type: 'success',
+    confirmText: 'OK',
+    cancelText: 'Cancelar',
+    onConfirm: null,
+    onAction: null,
+});
+
+const showFeedback = (title, message, type = 'success', confirmText = 'OK', onConfirm = null, cancelText = 'Cancelar', onAction = null) => {
+    feedback.value = { open: true, title, message, type, confirmText, onConfirm, cancelText, onAction };
+};
+
+const closeFeedback = () => {
+    feedback.value.open = false;
+};
+
+const handleFeedbackConfirm = () => {
+    if (feedback.value.onConfirm) {
+        feedback.value.onConfirm();
+    }
+    closeFeedback();
+};
+
+const handleFeedbackAction = () => {
+    if (feedback.value.onAction) {
+        feedback.value.onAction();
+    }
+    closeFeedback();
+};
 
 const booking = ref({
     customer_name: '',
@@ -248,6 +291,97 @@ const copyPix = async () => {
     setTimeout(() => (copiedPix.value = false), 2000);
 };
 
+const cancelBooking = async (bookingId) => {
+    showFeedback(
+        'Cancelar Agendamento',
+        'Tem certeza que deseja cancelar este agendamento?',
+        'confirm',
+        'Manter Agendamento', // Primary (Safe)
+        null, // onConfirm (just closes)
+        'Sim, cancelar', // Secondary (Danger action)
+        async () => {
+            try {
+                await axios.post(
+                    route('widget.bookings.cancel', {
+                        providerProfile: props.provider.slug,
+                        agenda: props.agenda.slug,
+                        booking: bookingId,
+                    })
+                );
+                showFeedback('Sucesso', 'Agendamento cancelado com sucesso.');
+                searchBookings();
+            } catch (e) {
+                showFeedback('Erro', e.response?.data?.message || 'Erro ao cancelar agendamento.', 'error');
+            }
+        }
+    );
+};
+
+const initReschedule = (bookingObj) => {
+    reschedulingBooking.value = bookingObj;
+    selectedServiceId.value = bookingObj.service_id;
+    searchModalOpen.value = false;
+    step.value = 2; // Go to calendar
+    prefetchMonthAvailability();
+};
+
+const finishReschedule = async () => {
+    if (!selectedSlot.value || !reschedulingBooking.value) return;
+    
+    submitting.value = true;
+    try {
+        await axios.post(
+            route('widget.bookings.reschedule', {
+                providerProfile: props.provider.slug,
+                agenda: props.agenda.slug,
+                booking: reschedulingBooking.value.id,
+            }),
+            { starts_at: selectedSlot.value.starts_at }
+        );
+        
+        showFeedback('Sucesso', 'Agendamento remarcado com sucesso.');
+        reschedulingBooking.value = null;
+        step.value = 1; 
+    } catch (e) {
+        showFeedback('Erro', e.response?.data?.message || 'Erro ao remarcar agendamento.', 'error');
+    } finally {
+        submitting.value = false;
+    }
+};
+
+const searchBookings = async () => {
+    searching.value = true;
+    searchError.value = null;
+    searchResults.value = [];
+    try {
+        const { data } = await axios.post(
+            route('widget.bookings.search', {
+                providerProfile: props.provider.slug,
+                agenda: props.agenda.slug,
+            }),
+            searchForm.value
+        );
+        searchResults.value = data;
+        if (data.length === 0) {
+            searchError.value = 'Nenhum agendamento encontrado.';
+        }
+    } catch (e) {
+        searchError.value = e.response?.data?.message || 'Erro ao buscar agendamentos.';
+    } finally {
+        searching.value = false;
+    }
+};
+
+const formatShortDate = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+};
+
 // ── Price format ──────────────────────────────────────────────────────────────
 const formatPrice = (cents) =>
     (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -272,7 +406,25 @@ onMounted(() => {
 <template>
     <Head :title="`Agendamento | ${provider.display_name} — ${agenda.name}`" />
 
-    <div class="min-h-screen bg-background text-foreground flex flex-col items-center">
+    <div class="min-h-screen bg-background text-foreground flex flex-col items-center p-4">
+
+        <!-- ── Top Banner ─────────────────────────────────────────────────── -->
+        <div class="w-full max-w-[480px] mb-6 bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between group">
+            <div class="flex items-center gap-3">
+                <div class="h-10 w-10 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100 transition-colors group-hover:bg-slate-100">
+                    <CalendarSearch class="h-5 w-5 text-slate-400" />
+                </div>
+                <p class="text-[11px] font-medium text-slate-500 max-w-[170px] leading-tight">
+                    Para consultar, remarcar ou cancelar um agendamento
+                </p>
+            </div>
+            <button 
+                @click="searchModalOpen = true"
+                class="bg-black text-white px-4 py-2.5 rounded-lg text-[11px] font-bold hover:bg-slate-800 transition-all shadow-lg shadow-black/5 active:scale-95"
+            >
+                Meus Agendamentos
+            </button>
+        </div>
 
         <!-- ── Main Widget Container (Phone-like Mockup Style) ──────────────── -->
         <div class="w-full max-w-[480px] min-h-screen sm:min-h-0 sm:my-8 sm:rounded-[2.5rem] sm:border border-border bg-background shadow-2xl overflow-hidden flex flex-col transition-all duration-500">
@@ -461,12 +613,20 @@ onMounted(() => {
 
                     <div class="mt-auto">
                         <button 
-                            @click="continueFromStep2" 
-                            :disabled="!selectedSlot"
-                            class="w-full h-12 text-white rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95 hover:opacity-90 disabled:opacity-40" 
+                            @click="reschedulingBooking ? finishReschedule() : continueFromStep2()" 
+                            :disabled="!selectedSlot || submitting"
+                            class="w-full h-12 text-white rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95 hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2" 
                             :style="{ backgroundColor: primaryColor }"
                         >
-                            Continuar
+                            <Loader2 v-if="submitting" class="h-4 w-4 animate-spin" />
+                            {{ reschedulingBooking ? 'Confirmar Reagendamento' : 'Continuar' }}
+                        </button>
+                        <button 
+                            v-if="reschedulingBooking"
+                            @click="reschedulingBooking = null; step = 1"
+                            class="w-full mt-2 h-10 text-muted-foreground text-[10px] font-bold uppercase tracking-widest hover:text-foreground"
+                        >
+                            Cancelar Reagendamento
                         </button>
                     </div>
                 </section>
@@ -656,6 +816,137 @@ onMounted(() => {
             </div>
         </div>
     </Modal>
+
+
+
+    <!-- ── Search Modal ─────────────────────────────────────────────────────── -->
+    <Modal :open="searchModalOpen" @close="searchModalOpen = false">
+        <div class="-m-6 flex flex-col">
+            <!-- Header -->
+            <div class="bg-[#18181b] text-white p-6 relative">
+                <button @click="searchModalOpen = false" class="absolute right-4 top-4 text-white/60 hover:text-white transition-colors">
+                    <X class="h-5 w-5" />
+                </button>
+                <h3 class="text-base font-bold">Meus Agendamentos</h3>
+                <p class="text-xs text-white/60">Busque pelo e-mail ou telefone</p>
+            </div>
+
+            <!-- Body -->
+            <div class="p-6 space-y-6">
+                <div class="flex items-center gap-2 mb-2">
+                    <Search class="h-4 w-4 text-slate-400" />
+                    <span class="text-xs font-bold text-slate-900">Localizar agendamento</span>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <Mail class="h-3 w-3" /> E-mail
+                        </label>
+                        <input 
+                            v-model="searchForm.email"
+                            type="email" 
+                            placeholder="seu@email.com" 
+                            class="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white text-sm focus:border-black focus:ring-0 transition-all"
+                        />
+                    </div>
+
+                    <div class="relative flex items-center justify-center py-2">
+                        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-100"></div></div>
+                        <span class="relative bg-white px-3 text-[10px] font-bold text-slate-300 uppercase">ou</span>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <Phone class="h-3 w-3" /> Telefone
+                        </label>
+                        <input 
+                            v-model="searchForm.phone"
+                            type="tel" 
+                            placeholder="(11) 99999-0000" 
+                            class="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white text-sm focus:border-black focus:ring-0 transition-all"
+                        />
+                    </div>
+                </div>
+
+                <div v-if="searchError" class="p-3 rounded-lg bg-rose-50 border border-rose-100 text-rose-600 text-[11px] font-medium">
+                    {{ searchError }}
+                </div>
+
+                <!-- Results -->
+                <div v-if="searchResults.length" class="space-y-3 pt-2">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Agendamentos encontrados</p>
+                    <div v-for="res in searchResults" :key="res.id" class="p-4 rounded-xl border border-slate-100 bg-white shadow-sm space-y-3">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-bold text-slate-900">{{ res.service?.name }}</p>
+                                <div class="flex items-center gap-1.5 mt-1 text-slate-500">
+                                    <Clock class="h-3 w-3" />
+                                    <span class="text-[11px] font-medium">{{ formatShortDate(res.starts_at) }}</span>
+                                </div>
+                            </div>
+                            <span 
+                                class="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase"
+                                :class="{
+                                    'bg-amber-100 text-amber-700': res.status === 'pending',
+                                    'bg-sky-100 text-sky-700': res.status === 'confirmed',
+                                }"
+                            >
+                                {{ res.status === 'pending' ? 'Pendente' : 'Confirmado' }}
+                            </span>
+                        </div>
+                        
+                        <div class="flex gap-2 pt-1">
+                            <button 
+                                @click="cancelBooking(res.id)"
+                                class="flex-1 py-2 rounded-lg border border-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                @click="initReschedule(res)"
+                                class="flex-1 py-2 rounded-lg border border-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                            >
+                                Remarcar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <button 
+                    @click="searchBookings"
+                    :disabled="searching || (!searchForm.email && !searchForm.phone)"
+                    class="w-full h-12 bg-black text-white rounded-xl text-sm font-bold shadow-lg hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                    <Loader2 v-if="searching" class="h-4 w-4 animate-spin" />
+                    Buscar agendamentos
+                </button>
+
+                <div class="flex justify-start">
+                    <a 
+                        href="https://zenithagenda.com.br/" 
+                        target="_blank" 
+                        class="text-[8px] font-bold text-slate-300 uppercase tracking-widest hover:text-slate-500 transition-colors"
+                    >
+                        feito Por zenith agenda
+                    </a>
+                </div>
+            </div>
+        </div>
+    </Modal>
+
+    <!-- ── Feedback Modal ───────────────────────────────────────────────────── -->
+    <FeedbackModal
+        :open="feedback.open"
+        :title="feedback.title"
+        :message="feedback.message"
+        :type="feedback.type"
+        :confirm-text="feedback.confirmText"
+        :cancel-text="feedback.cancelText"
+        @close="closeFeedback"
+        @confirm="handleFeedbackConfirm"
+        @action="handleFeedbackAction"
+    />
 </template>
 
 <style>
