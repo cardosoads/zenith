@@ -17,6 +17,7 @@ class ProviderProfile extends Model
         'user_id',
         'slug',
         'display_name',
+        'segment',
         'timezone',
         'status',
         'billing_status',

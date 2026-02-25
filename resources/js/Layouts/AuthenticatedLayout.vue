@@ -145,6 +145,7 @@ watch(sidebarCollapsed, (value) => {
             <!-- Bottom navigation -->
             <div class="border-t border-border p-4 space-y-1">
                 <Link
+                    v-if="!roles.includes('admin')"
                     :href="route('subscription.index', linkParams('subscription.index'))"
                     class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200"
                     :class="[
