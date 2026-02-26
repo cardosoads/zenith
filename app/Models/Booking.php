@@ -64,6 +64,11 @@ class Booking extends Model
         return $this->hasMany(BookingAttachment::class);
     }
 
+    public function reminders(): HasMany
+    {
+        return $this->hasMany(AppointmentReminder::class);
+    }
+
     public function payment(): HasOne
     {
         return $this->hasOne(BookingPayment::class);

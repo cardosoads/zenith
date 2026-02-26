@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'wuzapi' => [
+        'base_url' => env('WUZAPI_BASE_URL', 'http://localhost:8080'),
+        'admin_token' => env('WUZAPI_ADMIN_TOKEN'),
+        'user_token' => env('WUZAPI_USER_TOKEN'),
+        'hmac_secret' => env('WUZAPI_HMAC_SECRET'),
+    ],
+
 ];

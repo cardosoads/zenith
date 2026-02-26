@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { Head, Link, useForm, router } from '@inertiajs/vue3'
+import axios from 'axios'
 import StripeCardElement from '@/Components/Payment/StripeCardElement.vue'
 import {
     ArrowLeft,
@@ -144,32 +145,10 @@ const paymentError = ref(null)
 const submit = async () => {
     paymentError.value = null
     paymentProcessing.value = true
+    form.clearErrors()
 
     try {
-        const response = await fetch(route('checkout.store'), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-                Accept: 'application/json',
-            },
-            body: JSON.stringify(form.data()),
-        })
-
-        const data = await response.json()
-
-        if (!response.ok) {
-            if (data.errors) {
-                form.clearErrors()
-                Object.keys(data.errors).forEach((key) => {
-                    form.setError(key, data.errors[key][0])
-                })
-            } else {
-                paymentError.value = data.message || 'Erro ao processar. Tente novamente.'
-            }
-            paymentProcessing.value = false
-            return
-        }
+        const { data } = await axios.post(route('checkout.store'), form.data())
 
         if (data.client_secret && stripeCardRef.value) {
             const result = await stripeCardRef.value.confirm(data.client_secret)
@@ -187,7 +166,13 @@ const submit = async () => {
             },
         })
     } catch (e) {
-        paymentError.value = 'Erro inesperado. Tente novamente.'
+        if (e.response?.status === 422 && e.response.data?.errors) {
+            Object.keys(e.response.data.errors).forEach((key) => {
+                form.setError(key, e.response.data.errors[key][0])
+            })
+        } else {
+            paymentError.value = e.response?.data?.message || 'Erro inesperado. Tente novamente.'
+        }
         paymentProcessing.value = false
     }
 }
@@ -376,6 +361,9 @@ const submit = async () => {
                                         placeholder="000.000.000-00"
                                         class="rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-foreground"
                                     />
+                                    <p v-if="form.errors.document" class="text-[11px] text-red-400">
+                                        {{ form.errors.document }}
+                                    </p>
                                 </div>
                                 <div class="flex flex-1 flex-col gap-1.5">
                                     <label class="text-xs font-medium text-muted-foreground">
@@ -387,6 +375,9 @@ const submit = async () => {
                                         placeholder="(00) 00000-0000"
                                         class="rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-foreground"
                                     />
+                                    <p v-if="form.errors.phone" class="text-[11px] text-red-400">
+                                        {{ form.errors.phone }}
+                                    </p>
                                 </div>
                             </div>
 
@@ -401,6 +392,9 @@ const submit = async () => {
                                     placeholder="Ex: Studio Beleza Total"
                                     class="rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-foreground"
                                 />
+                                <p v-if="form.errors.business_name" class="text-[11px] text-red-400">
+                                    {{ form.errors.business_name }}
+                                </p>
                             </div>
 
                             <!-- Password -->
@@ -580,7 +574,7 @@ const submit = async () => {
                             <span v-else>Assinar — R$ {{ planPrice }},00/mês</span>
                         </button>
                         <p class="mt-3 text-center text-[10px] text-muted-foreground">
-                            14 dias grátis. Você não será cobrado agora. Cancele a qualquer
+                            7 dias grátis. Você não será cobrado agora. Cancele a qualquer
                             momento.
                         </p>
                     </div>
@@ -647,7 +641,7 @@ const submit = async () => {
                                     Período de teste
                                 </span>
                                 <span class="text-xs font-medium text-emerald-500">
-                                    14 dias grátis
+                                    7 dias grátis
                                 </span>
                             </div>
                             <div class="border-t border-border pt-3">
@@ -676,7 +670,7 @@ const submit = async () => {
                                 <span v-else>Assinar — R$ {{ planPrice }},00/mês</span>
                             </button>
                             <p class="mt-3 text-center text-[10px] text-muted-foreground">
-                                14 dias grátis. Você não será cobrado agora.
+                                7 dias grátis. Você não será cobrado agora.
                             </p>
                         </div>
 

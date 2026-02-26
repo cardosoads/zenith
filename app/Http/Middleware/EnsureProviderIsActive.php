@@ -26,7 +26,21 @@ class EnsureProviderIsActive
 
         $subscription = $profile->currentSubscription;
 
-        if (! $subscription || $subscription->status !== SubscriptionStatus::Active) {
+        if (! $subscription) {
+            return redirect()->route('onboarding.show');
+        }
+
+        if ($subscription->status === SubscriptionStatus::Trialing) {
+            if ($profile->trialExpired()) {
+                return redirect()
+                    ->route('onboarding.show')
+                    ->with('status', 'Seu período de teste expirou. Assine um plano para continuar.');
+            }
+
+            return $next($request);
+        }
+
+        if ($subscription->status !== SubscriptionStatus::Active) {
             return redirect()->route('onboarding.show');
         }
 

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Plan;
+use App\SubscriptionStatus;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -10,42 +12,69 @@ class SubscriptionController extends Controller
 {
     public function index(Request $request): Response
     {
-        // Mock data based on the screenshot
-        $subscription = [
-            'plan_name' => 'Professional',
-            'status' => 'active',
-            'price' => 99.00,
-            'renewal_date' => '2026-03-01',
-            'usage' => [
-                'professionals' => ['current' => 3, 'limit' => 5],
-                'appointments' => ['current' => 145, 'limit' => null], // ilimitado
-                'customers' => ['current' => 248, 'limit' => null], // ilimitado
-            ],
-            'payment_method' => [
-                'type' => 'card',
-                'last4' => '4242',
-                'expiry' => '12/2028',
-            ],
-            'invoices' => [
-                [
-                    'id' => 'INV-2026-002',
-                    'date' => '2026-02-01',
-                    'plan' => 'Professional',
-                    'amount' => 99.00,
-                    'status' => 'paid',
-                ],
-                [
-                    'id' => 'INV-2026-001',
-                    'date' => '2026-01-01',
-                    'plan' => 'Professional',
-                    'amount' => 99.00,
-                    'status' => 'paid',
-                ],
-            ],
-        ];
+        $profile = $request->user()?->providerProfile;
+        $subscription = $profile?->currentSubscription;
+        $plan = $subscription?->plan;
+
+        $isTrialing = $subscription?->status === SubscriptionStatus::Trialing;
+        $trialEndsAt = $profile?->trial_ends_at;
+        $bookingsQuery = $profile?->bookings();
 
         return Inertia::render('Provider/Subscription/Index', [
-            'subscription' => $subscription,
+            'subscription' => [
+                'current_plan_id' => $plan?->id,
+                'plan_name' => $plan?->name ?? 'Nenhum',
+                'status' => $subscription?->status?->value ?? 'none',
+                'price' => $plan ? $plan->price_cents / 100 : 0,
+                'renewal_date' => $subscription?->current_period_end?->format('Y-m-d'),
+                'is_trialing' => $isTrialing,
+                'trial_ends_at' => $trialEndsAt?->format('Y-m-d'),
+                'trial_days_remaining' => $isTrialing && $trialEndsAt ? (int) now()->diffInDays($trialEndsAt, false) : 0,
+                'usage' => [
+                    'professionals' => [
+                        'current' => 1,
+                        'limit' => $plan?->slug === 'starter' ? 1 : ($plan?->slug === 'growth' ? 5 : null),
+                    ],
+                    'appointments' => [
+                        'current' => (int) ($bookingsQuery?->count() ?? 0),
+                        'limit' => null,
+                    ],
+                    'customers' => [
+                        'current' => (int) ($bookingsQuery?->clone()->distinct('customer_email')->count('customer_email') ?? 0),
+                        'limit' => null,
+                    ],
+                ],
+                'payment_method' => [
+                    'type' => $subscription?->payment_provider,
+                    'last4' => $isTrialing ? 'TRIAL' : '----',
+                    'expiry' => $subscription?->current_period_end?->format('m/Y') ?? '--/----',
+                ],
+                'invoices' => $profile
+                    ? $profile->subscriptions()
+                        ->with('plan')
+                        ->latest('created_at')
+                        ->get()
+                        ->map(fn ($history) => [
+                            'id' => $history->external_id ?? sprintf('SUB-%06d', $history->id),
+                            'date' => $history->created_at?->format('Y-m-d'),
+                            'plan' => $history->plan?->name,
+                            'amount' => $history->plan ? $history->plan->price_cents / 100 : 0,
+                            'status' => $history->status->value,
+                        ])
+                        ->values()
+                    : [],
+            ],
+            'plans' => Plan::query()
+                ->where('is_active', true)
+                ->orderBy('price_cents')
+                ->get()
+                ->map(fn (Plan $p) => [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'slug' => $p->slug,
+                    'price_cents' => $p->price_cents,
+                ]),
+
         ]);
     }
 }

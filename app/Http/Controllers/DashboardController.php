@@ -33,7 +33,7 @@ class DashboardController extends Controller
 
         $profile = $user->providerProfile;
 
-        if (!$profile) {
+        if (! $profile) {
             $profile = ProviderProfile::query()->create([
                 'user_id' => $user->id,
                 'slug' => Str::slug($user->name . '-' . Str::random(6)),
@@ -46,7 +46,13 @@ class DashboardController extends Controller
 
         $subscription = $profile->currentSubscription;
 
-        if (!$subscription || $subscription->status !== SubscriptionStatus::Active || $profile->status !== ProviderStatus::Active) {
+        $isAllowedSubscription = $subscription
+            && (
+                $subscription->status === SubscriptionStatus::Active
+                || ($subscription->status === SubscriptionStatus::Trialing && ! $profile->trialExpired())
+            );
+
+        if (! $isAllowedSubscription || $profile->status !== ProviderStatus::Active) {
             return redirect()->route('onboarding.show');
         }
 

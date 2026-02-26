@@ -57,6 +57,8 @@ class CheckoutController extends Controller
             $user = User::query()->create([
                 'name' => $validated['first_name'].' '.$validated['last_name'],
                 'email' => $validated['email'],
+                'cpf' => $validated['document'],
+                'phone' => $validated['phone'],
                 'password' => Hash::make($validated['password']),
             ]);
 

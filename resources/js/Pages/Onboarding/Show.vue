@@ -6,6 +6,7 @@ import Card from '@/Components/UI/Card.vue'
 import Badge from '@/Components/UI/Badge.vue'
 import InputLabel from '@/Components/InputLabel.vue'
 import { Head, useForm, router } from '@inertiajs/vue3'
+import axios from 'axios'
 import { ref } from 'vue'
 
 const props = defineProps({
@@ -37,23 +38,7 @@ const checkout = async () => {
     paymentProcessing.value = true
 
     try {
-        const response = await fetch(route('onboarding.checkout'), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-                Accept: 'application/json',
-            },
-            body: JSON.stringify({ plan_id: form.plan_id }),
-        })
-
-        const data = await response.json()
-
-        if (!response.ok) {
-            paymentError.value = data.message || 'Erro ao criar assinatura.'
-            paymentProcessing.value = false
-            return
-        }
+        const { data } = await axios.post(route('onboarding.checkout'), { plan_id: form.plan_id })
 
         if (data.client_secret && stripeCardRef.value) {
             const result = await stripeCardRef.value.confirm(data.client_secret)
@@ -71,7 +56,7 @@ const checkout = async () => {
             },
         })
     } catch (e) {
-        paymentError.value = 'Erro inesperado. Tente novamente.'
+        paymentError.value = e.response?.data?.message || 'Erro inesperado. Tente novamente.'
         paymentProcessing.value = false
     }
 }

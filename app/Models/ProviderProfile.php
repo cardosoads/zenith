@@ -18,9 +18,14 @@ class ProviderProfile extends Model
         'slug',
         'display_name',
         'segment',
+        'cnpj',
+        'address',
+        'logo_path',
         'timezone',
+        'currency',
         'status',
         'billing_status',
+        'trial_ends_at',
         'cancellation_cutoff_hours',
         'pix_key',
         'pix_key_type',
@@ -34,6 +39,7 @@ class ProviderProfile extends Model
         return [
             'status' => ProviderStatus::class,
             'cancellation_cutoff_hours' => 'integer',
+            'trial_ends_at' => 'datetime',
         ];
     }
 
@@ -80,5 +86,25 @@ class ProviderProfile extends Model
     public function latestAgenda(): HasOne
     {
         return $this->hasOne(ProviderAgenda::class, 'provider_profile_id')->latestOfMany();
+    }
+
+    public function teamMembers(): HasMany
+    {
+        return $this->hasMany(TeamMember::class);
+    }
+
+    public function notificationPreference(): HasOne
+    {
+        return $this->hasOne(NotificationPreference::class);
+    }
+
+    public function isOnTrial(): bool
+    {
+        return $this->trial_ends_at !== null && $this->trial_ends_at->isFuture();
+    }
+
+    public function trialExpired(): bool
+    {
+        return $this->trial_ends_at !== null && $this->trial_ends_at->isPast();
     }
 }

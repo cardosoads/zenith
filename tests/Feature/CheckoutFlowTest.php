@@ -61,6 +61,8 @@ test('new user can create account and subscription via checkout', function () {
     $user = User::query()->where('email', 'joao@example.com')->first();
     expect($user)->not->toBeNull()
         ->and($user->name)->toBe('João Silva')
+        ->and($user->cpf)->toBe('123.456.789-00')
+        ->and($user->phone)->toBe('(11) 99999-9999')
         ->and($user->hasRole('provider'))->toBeTrue();
 
     $profile = $user->providerProfile;
@@ -76,7 +78,7 @@ test('new user can create account and subscription via checkout', function () {
 test('checkout store validates required fields', function () {
     $this->postJson(route('checkout.store'), [])
         ->assertUnprocessable()
-        ->assertJsonValidationErrors(['plan_id', 'first_name', 'last_name', 'email', 'password']);
+        ->assertJsonValidationErrors(['plan_id', 'first_name', 'last_name', 'email', 'document', 'phone', 'business_name', 'password']);
 });
 
 test('checkout store rejects duplicate email', function () {
@@ -91,6 +93,26 @@ test('checkout store rejects duplicate email', function () {
         'password_confirmation' => 'Password1!',
     ])->assertUnprocessable()
         ->assertJsonValidationErrors(['email']);
+});
+
+test('checkout store rejects duplicate cpf and phone', function () {
+    User::factory()->create([
+        'cpf' => '123.456.789-00',
+        'phone' => '(11) 99999-9999',
+    ]);
+
+    $this->postJson(route('checkout.store'), [
+        'plan_id' => $this->plan->id,
+        'first_name' => 'João',
+        'last_name' => 'Silva',
+        'email' => 'novo@example.com',
+        'document' => '123.456.789-00',
+        'phone' => '(11) 99999-9999',
+        'business_name' => 'Studio João',
+        'password' => 'Password1!',
+        'password_confirmation' => 'Password1!',
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['document', 'phone']);
 });
 
 test('checkout confirm activates subscription', function () {

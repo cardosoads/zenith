@@ -148,7 +148,7 @@ const FAQS = [
     {
         question: "Posso testar antes de assinar?",
         answer:
-            "Sim! Todos os planos contam com 14 dias de teste gratuito, sem necessidade de cartão de crédito.",
+            "Sim! Todos os planos contam com 7 dias de teste gratuito, sem necessidade de cartão de crédito.",
     },
     {
         question: "Posso mudar de plano a qualquer momento?",
@@ -260,7 +260,7 @@ const toggleFaq = (index) => {
                 <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 focus-within:ring-2 focus-within:ring-ring">
                     <Zap class="h-3.5 w-3.5 text-success" /> <!-- Changed emerald-500 to success from CSS vars -->
                     <span class="text-xs font-medium text-muted-foreground">
-                        14 dias grátis - Sem cartão de crédito
+                        7 dias grátis - Sem cartão de crédito
                     </span>
                 </div>
 
@@ -350,7 +350,7 @@ const toggleFaq = (index) => {
                         Escolha o plano ideal para você
                     </h2>
                     <p class="mt-4 text-pretty text-muted-foreground">
-                        Todos os planos incluem 14 dias de teste gratuito. Cancele quando
+                        Todos os planos incluem 7 dias de teste gratuito. Cancele quando
                         quiser.
                     </p>
                 </div>
@@ -515,7 +515,7 @@ const toggleFaq = (index) => {
                     </Link>
                 </div>
                 <p class="mt-4 text-xs text-muted-foreground">
-                    14 dias grátis - Sem cartão de crédito - Cancele quando quiser
+                    7 dias grátis - Sem cartão de crédito - Cancele quando quiser
                 </p>
             </div>
         </section>

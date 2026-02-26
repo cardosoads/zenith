@@ -20,6 +20,8 @@ use App\Http\Controllers\PublicWidgetController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\TeamMemberController;
+use App\Http\Controllers\WuzapiWebhookController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -49,6 +51,7 @@ Route::prefix('/w/{providerProfile:slug}/{agenda:slug}')
 
 Route::post('/webhooks/billing/{provider}', BillingWebhookController::class)->name('webhooks.billing');
 Route::post('/webhooks/pix/{provider}', PixWebhookController::class)->name('webhooks.pix');
+Route::post('/webhooks/wuzapi', WuzapiWebhookController::class)->name('webhooks.wuzapi');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
@@ -103,6 +106,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::patch('/profile/business', [ProfileController::class, 'updateBusiness'])->name('profile.business.update');
+    Route::post('/profile/logo', [ProfileController::class, 'uploadLogo'])->name('profile.logo.upload');
+    Route::delete('/profile/logo', [ProfileController::class, 'deleteLogo'])->name('profile.logo.destroy');
+    Route::post('/profile/team', [TeamMemberController::class, 'store'])->name('profile.team.store');
+    Route::patch('/profile/team/{teamMember}', [TeamMemberController::class, 'update'])->name('profile.team.update');
+    Route::delete('/profile/team/{teamMember}', [TeamMemberController::class, 'destroy'])->name('profile.team.destroy');
+    Route::patch('/profile/notifications', [ProfileController::class, 'updateNotifications'])->name('profile.notifications.update');
+    Route::delete('/profile/sessions/{session}', [ProfileController::class, 'destroySession'])->name('profile.sessions.destroy');
 });
 
 require __DIR__ . '/auth.php';
