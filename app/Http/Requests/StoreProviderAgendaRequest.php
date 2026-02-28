@@ -30,6 +30,8 @@ class StoreProviderAgendaRequest extends FormRequest
             'services.*.price' => ['nullable', 'string'],
             'services.*.isFree' => ['required', 'boolean'],
             'payment_requirement' => ['required', 'string', 'in:none,full,half'],
+            'embed_width' => ['nullable', 'integer', 'min:300', 'max:1200'],
+            'transparent_bg' => ['nullable', 'boolean'],
         ];
     }
 }

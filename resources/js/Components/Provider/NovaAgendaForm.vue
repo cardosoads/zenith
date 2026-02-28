@@ -70,6 +70,8 @@ const form = useForm({
     slug: props.agenda?.slug || '',
     allowDocs: false,
     docsTitle: '',
+    embed_width: props.agenda?.embed_width || 480,
+    transparent_bg: props.agenda?.transparent_bg || false,
 });
 
 const THEMES = [
@@ -310,6 +312,29 @@ const mockupSlots = computed(() => {
                                 <div class="space-y-3"><label class="text-xs font-bold text-[#18181b]">Cor principal</label><div class="flex items-center gap-3 h-11 px-4 rounded-lg border border-gray-100 bg-[#f9fafb]"><div class="h-6 w-6 rounded border border-gray-200" :style="{ backgroundColor: form.primaryColor }"></div><input v-model="form.primaryColor" type="text" class="bg-transparent border-none outline-none text-sm font-semibold text-gray-500 w-full" /></div></div>
                                 <div class="space-y-3"><label class="text-xs font-bold text-[#18181b]">Cor secundaria</label><div class="flex items-center gap-3 h-11 px-4 rounded-lg border border-gray-100 bg-[#f9fafb]"><div class="h-6 w-6 rounded border border-gray-200" :style="{ backgroundColor: form.secondaryColor }"></div><input v-model="form.secondaryColor" type="text" class="bg-transparent border-none outline-none text-sm font-semibold text-gray-500 w-full" /></div></div>
                             </div>
+
+                            <div class="pt-8 border-t border-gray-100 space-y-6">
+                                <h3 class="text-xs font-bold text-[#18181b] uppercase tracking-wider">Configurações de Incorporamento (Embed)</h3>
+                                <div class="grid grid-cols-2 gap-6">
+                                    <div class="space-y-3">
+                                        <label class="text-xs font-bold text-[#18181b]">Largura Padrão (px)</label>
+                                        <div class="flex items-center gap-3 h-11 px-4 rounded-lg border border-gray-100 bg-[#f9fafb]">
+                                            <input v-model.number="form.embed_width" type="number" step="10" min="300" max="1200" class="bg-transparent border-none outline-none text-sm font-semibold text-[#18181b] w-full" />
+                                        </div>
+                                        <p class="text-[10px] text-gray-400">Largura em pixels que a agenda ocupará no seu site.</p>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <label class="text-xs font-bold text-[#18181b]">Transparência</label>
+                                        <button @click="form.transparent_bg = !form.transparent_bg" :class="cn('w-full h-11 px-4 rounded-lg border transition-all flex items-center justify-between font-bold text-xs', form.transparent_bg ? 'bg-[#10b981]/10 text-[#10b981] border-[#10b981]' : 'bg-white border-gray-100 text-gray-400')">
+                                            <span>Remover fundo branco</span>
+                                            <div :class="cn('h-5 w-5 rounded-full flex items-center justify-center transition-all', form.transparent_bg ? 'bg-[#10b981]' : 'bg-gray-200')">
+                                                <Check v-if="form.transparent_bg" class="h-3 w-3 text-white" />
+                                            </div>
+                                        </button>
+                                        <p class="text-[10px] text-gray-400">Útil para sites com fundo escuro ou colorido.</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div v-if="currentStepId === 'confirmar'" class="space-y-6">
@@ -343,7 +368,10 @@ const mockupSlots = computed(() => {
                     </div>
 
                     <!-- Interactive Client Mockup -->
-                    <div class="bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-2xl min-h-[560px] flex flex-col transition-all">
+                    <div class="rounded-[2.5rem] overflow-hidden flex flex-col transition-all" 
+                        :class="form.transparent_bg ? 'bg-transparent border-none' : 'bg-white border border-gray-100 shadow-2xl'"
+                        :style="{ maxWidth: form.embed_width + 'px' }"
+                    >
                         <!-- Preview Header -->
                         <div class="px-8 py-8 text-white flex items-center gap-5 transition-all duration-500" :style="{ backgroundColor: form.primaryColor }">
                             <div class="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center text-xl font-bold text-white shadow-inner">
@@ -376,7 +404,7 @@ const mockupSlots = computed(() => {
                                 <div class="h-[1px] flex-1 bg-gray-100"></div>
                                 <div :class="cn('h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-bold transition-all', mockupStep === 'confirmation' ? 'text-white' : 'border border-gray-100 text-gray-200')" :style="mockupStep === 'confirmation' ? { backgroundColor: form.primaryColor } : {}">4</div>
                                 <span class="text-[10px] uppercase font-bold text-gray-400 ml-2 tracking-widest whitespace-nowrap">
-                                    {{ mockupStep === 'services' ? 'Serviços' : mockupStep === 'date' ? 'Data' : mockupStep === 'time' ? 'Horário' : 'Confirmação' }}
+                                    {{ mockupStep === 'services' ? 'Serviços' : mockupStep === 'date' ? 'Data' : mockupStep === 'time' ? 'Horário' : 'Dados' }}
                                 </span>
                             </div>
 
@@ -523,35 +551,42 @@ const mockupSlots = computed(() => {
                                         <span class="text-xs font-bold text-[#18181b]">Detalhes do agendamento</span>
                                     </div>
 
-                                    <div class="space-y-4 mb-6">
-                                        <div>
-                                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">SERVICOS</span>
-                                            <div v-for="s in form.services.filter(s => selectedServicesMockup.includes(s.id))" :key="s.id" class="flex justify-between items-center mb-1">
-                                                <span class="text-xs font-medium text-gray-600">{{ s.name }}</span>
-                                                <span class="text-xs font-bold text-[#18181b]">{{ s.isFree ? 'Gratuito' : `R$ ${s.price || '0,00'}` }}</span>
+                                    <div class="space-y-4 mb-6 grid gap-6" :class="{ 'grid-cols-2': form.embed_width > 550 }">
+                                        <div class="bg-white p-6 rounded-2xl border border-gray-100">
+                                            <div class="flex items-center gap-3 mb-6 text-gray-400">
+                                                <Calendar class="h-4 w-4" />
+                                                <span class="text-[11px] font-bold text-gray-700">Detalhes</span>
+                                            </div>
+                                            <div>
+                                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">SERVICOS</span>
+                                                <div v-for="s in form.services.filter(s => selectedServicesMockup.includes(s.id))" :key="s.id" class="flex justify-between items-center mb-1">
+                                                    <span class="text-xs font-medium text-gray-600 truncate">{{ s.name }}</span>
+                                                    <span class="text-xs font-bold text-[#18181b]">{{ s.isFree ? 'Gratuito' : `R$ ${s.price || '0,00'}` }}</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="h-[1px] bg-gray-50 my-4"></div>
+
+                                            <div class="flex justify-between items-center">
+                                                <span class="text-xs font-bold text-[#18181b]">Total</span>
+                                                <span class="text-sm font-bold" :style="{ color: '#10b981' }">{{ mockupTotal }}</span>
                                             </div>
                                         </div>
 
-                                        <div class="h-[1px] bg-gray-50"></div>
-
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-xs font-bold text-[#18181b]">Total</span>
-                                            <span class="text-sm font-bold" :style="{ color: '#10b981' }">{{ mockupTotal }}</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="space-y-4">
-                                        <div class="flex justify-between items-center text-xs">
-                                            <span class="text-gray-400 font-medium">Profissional</span>
-                                            <span class="font-bold text-[#18181b]">{{ form.professional || 'fsadsfdf' }}</span>
-                                        </div>
-                                        <div class="flex justify-between items-center text-xs">
-                                            <span class="text-gray-400 font-medium">Data</span>
-                                            <span class="font-bold text-[#18181b]">{{ selectedMockupDateFormatted }}</span>
-                                        </div>
-                                        <div class="flex justify-between items-center text-xs">
-                                            <span class="text-gray-400 font-medium">Horario</span>
-                                            <span class="font-bold text-[#18181b]">{{ mockupTime }}</span>
+                                        <div class="space-y-4">
+                                            <div class="flex justify-between items-center text-xs">
+                                                <span class="text-gray-400 font-medium">Data</span>
+                                                <span class="font-bold text-[#18181b]">{{ selectedMockupDateFormatted }}</span>
+                                            </div>
+                                            <div class="flex justify-between items-center text-xs">
+                                                <span class="text-gray-400 font-medium">Horario</span>
+                                                <span class="font-bold text-[#18181b]">{{ mockupTime }}</span>
+                                            </div>
+                                            <div class="h-[1px] bg-gray-50 my-2"></div>
+                                            <div class="space-y-3">
+                                                <div class="space-y-1"><label class="text-[9px] font-bold text-gray-400 uppercase">Nome</label><div class="h-9 rounded-lg bg-gray-50"></div></div>
+                                                <div class="space-y-1"><label class="text-[9px] font-bold text-gray-400 uppercase">WhatsApp</label><div class="h-9 rounded-lg bg-gray-50"></div></div>
+                                            </div>
                                         </div>
                                     </div>
 

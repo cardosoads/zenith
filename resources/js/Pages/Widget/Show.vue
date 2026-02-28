@@ -402,6 +402,11 @@ watch(selectedServiceId, async () => {
 
 onMounted(() => {
     applyWidgetTheme();
+    if (queryParams.value.transparent_bg) {
+        document.body.style.backgroundColor = 'transparent';
+        document.documentElement.style.backgroundColor = 'transparent';
+        document.body.classList.add('bg-transparent');
+    }
 });
 </script>
 
@@ -415,7 +420,8 @@ onMounted(() => {
 
         <!-- ── Top Banner ─────────────────────────────────────────────────── -->
         <div 
-            class="w-full mb-6 bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between group"
+            class="w-full mb-6 rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between group transition-all"
+            :class="queryParams.transparent_bg ? 'bg-white/5 backdrop-blur-md border-white/10' : 'bg-white'"
             :style="{ maxWidth: `${queryParams.width}px` }"
         >
             <div class="flex items-center gap-3">
@@ -436,7 +442,7 @@ onMounted(() => {
 
         <!-- ── Main Widget Container (Phone-like Mockup Style) ──────────────── -->
         <div 
-            class="w-full sm:my-8 sm:rounded-[2.5rem] overflow-hidden flex flex-col transition-all duration-500"
+            class="w-full sm:my-8 sm:rounded-[2.5rem] overflow-hidden flex flex-col transition-all duration-500 min-h-[500px]"
             :class="[
                 queryParams.transparent_bg ? 'bg-transparent shadow-none border-none' : 'bg-background shadow-2xl border border-border'
             ]"
@@ -454,14 +460,14 @@ onMounted(() => {
                 </div>
                 <div>
                     <h3 class="text-base font-bold leading-tight">{{ agenda.name || 'Minha Agenda' }}</h3>
-                    <p class="text-white/40 text-[12px] font-medium">{{ provider.display_name || 'Profissional' }}</p>
+                    <p class="text-white/60 text-[11px] font-medium">{{ provider.display_name || 'Profissional' }}</p>
                 </div>
             </header>
 
             <!-- ── Content ──────────────────────────────────────────────────── -->
             <div 
                 class="flex-1 p-6 flex flex-col relative"
-                :class="{ 'bg-white/80 backdrop-blur-sm rounded-b-[2.5rem]': queryParams.transparent_bg && !queryParams.theme === 'dark' }"
+                :class="{ 'bg-background/20 backdrop-blur-sm rounded-b-[2.5rem]': queryParams.transparent_bg }"
             >
 
                 <!-- ── Progress Stepper (Identical to Provider Mockup) ───────── -->
@@ -660,9 +666,9 @@ onMounted(() => {
                     </div>
 
                     <!-- Summary Card & Form in Two Columns -->
-                    <div class="grid gap-6" :class="{ 'lg:grid-cols-2': queryParams.width > 600 }">
+                    <div class="grid gap-6 items-start" :class="queryParams.width > 580 ? 'grid-cols-2' : 'grid-cols-1'">
                         <!-- Summary Column -->
-                        <div class="bg-card rounded-2xl border border-border p-6 shadow-sm">
+                        <div class="rounded-2xl border border-border p-6 shadow-sm" :class="queryParams.transparent_bg ? 'bg-transparent' : 'bg-card'">
                             <div class="flex items-center gap-3 mb-6 text-muted-foreground">
                                 <Calendar class="h-4 w-4" />
                                 <span class="text-[11px] font-bold text-foreground">Detalhes do agendamento</span>
@@ -694,7 +700,7 @@ onMounted(() => {
 
                         <!-- Form Column -->
                         <div class="space-y-4">
-                            <div class="grid gap-4" :class="{ 'grid-cols-2': queryParams.width > 700 }">
+                            <div class="grid gap-4" :class="{ 'grid-cols-2': queryParams.width > 750 }">
                                 <div class="space-y-1.5 text-left">
                                     <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Nome completo</label>
                                     <input v-model="booking.customer_name" type="text" placeholder="Seu nome" class="w-full h-10 px-4 rounded-lg bg-muted border-none text-xs font-medium outline-none" />
