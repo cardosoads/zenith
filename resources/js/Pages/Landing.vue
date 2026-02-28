@@ -81,7 +81,7 @@ const PLANS = [
         ],
         highlighted: false,
         cta: "Criar Conta",
-        href: route('checkout.show'),
+        href: '/checkout',
     },
     {
         name: "Profissional",
@@ -98,7 +98,7 @@ const PLANS = [
         ],
         highlighted: true,
         cta: "Criar Conta",
-        href: route('checkout.show'),
+        href: '/checkout',
     },
     {
         name: "Empresa",
@@ -116,7 +116,7 @@ const PLANS = [
         ],
         highlighted: false,
         cta: "Criar Conta",
-        href: route('checkout.show'),
+        href: '/checkout',
     },
 ]
 

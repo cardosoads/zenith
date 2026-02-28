@@ -4,6 +4,7 @@ import { Head, useForm } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import NovaAgendaForm from '@/Components/Provider/NovaAgendaForm.vue';
 import Modal from '@/Components/Modal.vue';
+import FeedbackModal from '@/Components/UI/FeedbackModal.vue';
 import { cn } from '@/lib/utils';
 import {
   Plus,
@@ -38,6 +39,9 @@ const showEmbedModal = ref(false);
 const embedCode = ref('');
 const copiedLink = ref(null);
 const copiedEmbed = ref(false);
+
+const deleteConfirmOpen = ref(false);
+const agendaToDelete = ref(null);
 
 const editAgenda = (id) => {
     const agenda = props.agendas.find(a => a.id === id);
@@ -108,11 +112,21 @@ const toggleActive = (id) => {
 };
 
 const deleteAgenda = (id) => {
-    if (confirm('Tem certeza?')) {
-        useForm({}).delete(route('provider.agendas.destroy', id), {
-            preserveScroll: true
-        });
-    }
+    agendaToDelete.value = id;
+    deleteConfirmOpen.value = true;
+    openMenu.value = null;
+};
+
+const confirmDelete = () => {
+    if (!agendaToDelete.value) return;
+    
+    useForm({}).delete(route('provider.agendas.destroy', agendaToDelete.value), {
+        preserveScroll: true,
+        onSuccess: () => {
+            deleteConfirmOpen.value = false;
+            agendaToDelete.value = null;
+        }
+    });
 };
 
 const copyLink = (schedule) => {
@@ -429,5 +443,17 @@ const stats = computed(() => [
                 </div>
             </div>
         </Modal>
+
+        <FeedbackModal
+            :open="deleteConfirmOpen"
+            title="Excluir Agenda"
+            message="Tem certeza que deseja excluir esta agenda? Esta ação não pode ser desfeita e todos os serviços e agendamentos vinculados serão perdidos."
+            type="error"
+            confirm-text="Sim, excluir"
+            cancel-text="Cancelar"
+            @close="deleteConfirmOpen = false"
+            @confirm="confirmDelete"
+            @action="deleteConfirmOpen = false"
+        />
     </AuthenticatedLayout>
 </template>

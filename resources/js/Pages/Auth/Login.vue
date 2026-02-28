@@ -26,7 +26,7 @@ const isFormValid = computed(() => {
 })
 
 const submit = () => {
-    form.post(route('login'), {
+    form.post('/login', {
         onFinish: () => form.reset('password'),
     });
 };
