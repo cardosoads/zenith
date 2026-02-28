@@ -175,7 +175,7 @@ const submit = () => {
                         <!-- Submit button -->
                         <button
                             type="submit"
-                            :disabled="!isFormValid || form.processing"
+                            :disabled="form.processing"
                             class="flex items-center justify-center gap-2 rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <div v-if="form.processing" class="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
