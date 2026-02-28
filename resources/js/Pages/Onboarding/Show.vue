@@ -77,6 +77,13 @@ const checkout = async () => {
                 </Badge>
             </div>
 
+            <div class="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                <p class="text-sm text-foreground">
+                    Escolha um plano abaixo para começar seu <strong>período gratuito de 7 dias</strong>.
+                    Você não será cobrado agora — a cobrança só inicia após o término do trial.
+                </p>
+            </div>
+
             <InputLabel value="Selecione um plano" />
             <div class="grid gap-4 md:grid-cols-2">
                 <Card
