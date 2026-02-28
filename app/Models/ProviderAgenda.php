@@ -26,6 +26,8 @@ class ProviderAgenda extends Model
         'preset',
         'customer_extra_fields',
         'embed_height',
+        'embed_width',
+        'transparent_bg',
         'primary_color',
         'secondary_color',
         'payment_requirement',
@@ -37,6 +39,8 @@ class ProviderAgenda extends Model
             'is_published' => 'boolean',
             'customer_extra_fields' => 'array',
             'embed_height' => 'integer',
+            'embed_width' => 'integer',
+            'transparent_bg' => 'boolean',
         ];
     }
 

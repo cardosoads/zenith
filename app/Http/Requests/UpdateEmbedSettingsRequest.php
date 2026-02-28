@@ -19,6 +19,8 @@ class UpdateEmbedSettingsRequest extends FormRequest
             'density' => ['required', 'in:comfortable,medium'],
             'preset' => ['required', 'in:clean,contrast,soft,editorial'],
             'embed_height' => ['required', 'integer', 'min:400', 'max:2000'],
+            'embed_width' => ['required', 'integer', 'min:320', 'max:1200'],
+            'transparent_bg' => ['required', 'boolean'],
         ];
     }
 }

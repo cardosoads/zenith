@@ -20,6 +20,8 @@ const form = useForm({
     density: props.agenda.density,
     preset: props.agenda.preset,
     embed_height: props.agenda.embed_height,
+    embed_width: props.agenda.embed_width || 480,
+    transparent_bg: props.agenda.transparent_bg,
 });
 
 const previewUrl = computed(() => {
@@ -28,13 +30,15 @@ const previewUrl = computed(() => {
         accent: form.accent,
         density: form.density,
         preset: form.preset,
+        transparent_bg: form.transparent_bg ? 1 : 0,
+        width: form.embed_width,
     });
 
     return `${props.widgetUrl}?${query.toString()}`;
 });
 
 const embedCode = computed(() => {
-    return `<div id="zenith-booking-widget"></div>\n<script src="${props.embedScriptUrl}" data-za-container="#zenith-booking-widget" data-za-provider="${props.provider.slug}" data-za-agenda="${props.agenda.slug}" data-za-theme="${form.theme}" data-za-accent="${form.accent}" data-za-density="${form.density}" data-za-preset="${form.preset}" data-za-height="${form.embed_height}"><\\/script>`;
+    return `<div id="zenith-booking-widget"></div>\n<script src="${props.embedScriptUrl}" data-za-container="#zenith-booking-widget" data-za-provider="${props.provider.slug}" data-za-agenda="${props.agenda.slug}" data-za-theme="${form.theme}" data-za-accent="${form.accent}" data-za-density="${form.density}" data-za-preset="${form.preset}" data-za-height="${form.embed_height}" data-za-width="${form.embed_width}" data-za-transparent="${form.transparent_bg ? 1 : 0}"><\\/script>`;
 });
 
 const submit = () => {
@@ -113,6 +117,17 @@ const copyUrl = async () => {
                         <InputLabel value="Altura mínima do embed (px)" />
                         <input v-model="form.embed_height" class="za-input" type="number" min="400" max="2000" />
                         <InputError :message="form.errors.embed_height" />
+                    </div>
+
+                    <div>
+                        <InputLabel value="Largura do embed (px)" />
+                        <input v-model="form.embed_width" class="za-input" type="number" min="320" max="1200" />
+                        <InputError :message="form.errors.embed_width" />
+                    </div>
+
+                    <div class="flex items-center gap-2 py-2">
+                        <input v-model="form.transparent_bg" type="checkbox" id="transparent_bg" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+                        <label for="transparent_bg" class="text-sm font-medium text-gray-700">Fundo transparente</label>
                     </div>
 
                     <div class="flex gap-2">

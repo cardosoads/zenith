@@ -148,6 +148,8 @@ const queryParams = computed(() => {
         accent: params.get('accent'),
         density: params.get('density'),
         preset: params.get('preset'),
+        transparent_bg: params.get('transparent_bg') === '1' || props.agenda.transparent_bg,
+        width: params.get('width') || props.agenda.embed_width || 480,
     };
 });
 
@@ -406,10 +408,16 @@ onMounted(() => {
 <template>
     <Head :title="`Agendamento | ${provider.display_name} — ${agenda.name}`" />
 
-    <div class="min-h-screen bg-background text-foreground flex flex-col items-center p-4">
+    <div 
+        class="min-h-screen flex flex-col items-center p-4"
+        :class="queryParams.transparent_bg ? 'bg-transparent' : 'bg-background text-foreground'"
+    >
 
         <!-- ── Top Banner ─────────────────────────────────────────────────── -->
-        <div class="w-full max-w-[480px] mb-6 bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between group">
+        <div 
+            class="w-full mb-6 bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between group"
+            :style="{ maxWidth: `${queryParams.width}px` }"
+        >
             <div class="flex items-center gap-3">
                 <div class="h-10 w-10 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100 transition-colors group-hover:bg-slate-100">
                     <CalendarSearch class="h-5 w-5 text-slate-400" />
@@ -427,11 +435,18 @@ onMounted(() => {
         </div>
 
         <!-- ── Main Widget Container (Phone-like Mockup Style) ──────────────── -->
-        <div class="w-full max-w-[480px] min-h-screen sm:min-h-0 sm:my-8 sm:rounded-[2.5rem] sm:border border-border bg-background shadow-2xl overflow-hidden flex flex-col transition-all duration-500">
+        <div 
+            class="w-full sm:my-8 sm:rounded-[2.5rem] overflow-hidden flex flex-col transition-all duration-500"
+            :class="[
+                queryParams.transparent_bg ? 'bg-transparent shadow-none border-none' : 'bg-background shadow-2xl border border-border'
+            ]"
+            :style="{ maxWidth: `${queryParams.width}px` }"
+        >
             
             <!-- ── Header (Identical to Provider Mockup) ────────────────────── -->
             <header 
                 class="px-8 py-8 text-white flex items-center gap-5 transition-all duration-500 shrink-0" 
+                :class="{ 'rounded-t-[2.5rem]': !queryParams.transparent_bg }"
                 :style="{ backgroundColor: primaryColor }"
             >
                 <div class="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center text-xl font-bold text-white shadow-inner">
@@ -444,7 +459,10 @@ onMounted(() => {
             </header>
 
             <!-- ── Content ──────────────────────────────────────────────────── -->
-            <div class="flex-1 p-6 flex flex-col relative">
+            <div 
+                class="flex-1 p-6 flex flex-col relative"
+                :class="{ 'bg-white/80 backdrop-blur-sm rounded-b-[2.5rem]': queryParams.transparent_bg && !queryParams.theme === 'dark' }"
+            >
 
                 <!-- ── Progress Stepper (Identical to Provider Mockup) ───────── -->
                 <div class="flex items-center gap-2 mb-8 select-none">
@@ -641,53 +659,56 @@ onMounted(() => {
                         <span class="text-[10px] uppercase font-bold tracking-wider">Confirme seus dados</span>
                     </div>
 
-                    <!-- Summary Card -->
-                    <div class="bg-card rounded-2xl border border-border p-6 shadow-sm mb-6">
-                        <div class="flex items-center gap-3 mb-6 text-muted-foreground">
-                            <Calendar class="h-4 w-4" />
-                            <span class="text-[11px] font-bold text-foreground">Detalhes do agendamento</span>
+                    <!-- Summary Card & Form in Two Columns -->
+                    <div class="grid gap-6" :class="{ 'lg:grid-cols-2': queryParams.width > 600 }">
+                        <!-- Summary Column -->
+                        <div class="bg-card rounded-2xl border border-border p-6 shadow-sm">
+                            <div class="flex items-center gap-3 mb-6 text-muted-foreground">
+                                <Calendar class="h-4 w-4" />
+                                <span class="text-[11px] font-bold text-foreground">Detalhes do agendamento</span>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div>
+                                    <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest block mb-2">SERVIÇO</span>
+                                    <div class="flex justify-between items-center text-left">
+                                        <span class="text-xs font-medium text-foreground">{{ selectedService?.name }}</span>
+                                        <span class="text-xs font-bold" :class="selectedService?.price_cents === 0 ? 'text-emerald-600' : 'text-foreground'">
+                                            {{ selectedService?.price_cents === 0 ? 'Gratuito' : formatPrice(selectedService?.price_cents) }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="h-[1px] bg-border/50"></div>
+                                <div class="grid grid-cols-2 gap-4 text-left">
+                                    <div>
+                                        <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">DATA</span>
+                                        <span class="text-xs font-bold text-foreground">{{ selectedDateLabel }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">HORÁRIO</span>
+                                        <span class="text-xs font-bold text-foreground">{{ selectedSlotLabel }}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="space-y-4 mb-6">
-                            <div>
-                                <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest block mb-2">SERVIÇO</span>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-xs font-medium text-foreground">{{ selectedService?.name }}</span>
-                                    <span class="text-xs font-bold" :class="selectedService?.price_cents === 0 ? 'text-emerald-600' : 'text-foreground'">
-                                        {{ selectedService?.price_cents === 0 ? 'Gratuito' : formatPrice(selectedService?.price_cents) }}
-                                    </span>
+                        <!-- Form Column -->
+                        <div class="space-y-4">
+                            <div class="grid gap-4" :class="{ 'grid-cols-2': queryParams.width > 700 }">
+                                <div class="space-y-1.5 text-left">
+                                    <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Nome completo</label>
+                                    <input v-model="booking.customer_name" type="text" placeholder="Seu nome" class="w-full h-10 px-4 rounded-lg bg-muted border-none text-xs font-medium outline-none" />
                                 </div>
-                            </div>
-                            <div class="h-[1px] bg-border/50"></div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">DATA</span>
-                                    <span class="text-xs font-bold text-foreground">{{ selectedDateLabel }}</span>
+                                <div class="space-y-1.5 text-left">
+                                    <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">E-mail</label>
+                                    <input v-model="booking.customer_email" type="email" placeholder="seu@email.com" class="w-full h-10 px-4 rounded-lg bg-muted border-none text-xs font-medium outline-none" />
                                 </div>
-                                <div>
-                                    <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">HORÁRIO</span>
-                                    <span class="text-xs font-bold text-foreground">{{ selectedSlotLabel }}</span>
+                                <div class="space-y-1.5 text-left">
+                                    <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Telefone</label>
+                                    <input v-model="booking.customer_phone" type="tel" placeholder="(00) 00000-0000" class="w-full h-10 px-4 rounded-lg bg-muted border-none text-xs font-medium outline-none" />
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- Form -->
-                        <div class="space-y-4 border-t border-border pt-6">
-                            <div class="space-y-1.5 text-left">
-                                <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Nome completo</label>
-                                <input v-model="booking.customer_name" type="text" placeholder="Seu nome" class="w-full h-10 px-4 rounded-lg bg-muted border-none text-xs font-medium outline-none" />
-                            </div>
-                            <div class="space-y-1.5 text-left">
-                                <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">E-mail</label>
-                                <input v-model="booking.customer_email" type="email" placeholder="seu@email.com" class="w-full h-10 px-4 rounded-lg bg-muted border-none text-xs font-medium outline-none" />
-                            </div>
-                            <div class="space-y-1.5 text-left">
-                                <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Telefone</label>
-                                <input v-model="booking.customer_phone" type="tel" placeholder="(00) 00000-0000" class="w-full h-10 px-4 rounded-lg bg-muted border-none text-xs font-medium outline-none" />
-                            </div>
-                            
-                            <!-- Document Upload -->
-                            <div v-if="agenda.customer_extra_fields && agenda.customer_extra_fields.length" class="space-y-4">
+                                
+                                <!-- Custom Fields -->
                                 <div v-for="field in booking.extra_fields" :key="field.field_key" class="space-y-1.5 text-left">
                                     <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{{ field.field_label }}</label>
                                     <input v-model="field.field_value" type="text" class="w-full h-10 px-4 rounded-lg bg-muted border-none text-xs font-medium outline-none" />
@@ -696,7 +717,7 @@ onMounted(() => {
 
                             <div v-if="agenda.embed_height > 0" class="space-y-1.5 text-left">
                                 <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Anexos (opcional)</label>
-                                <label class="w-full h-10 px-4 rounded-lg bg-muted border border-dashed border-border flex items-center gap-2 cursor-pointer">
+                                <label class="w-full h-10 px-4 rounded-lg bg-muted border border-dashed border-border flex items-center gap-2 cursor-pointer transition-colors hover:bg-muted/80">
                                     <Paperclip class="h-3.5 w-3.5 text-muted-foreground" />
                                     <span class="text-[10px] text-muted-foreground truncate">{{ selectedFiles.length ? selectedFiles.length + ' arquivo(s)' : 'Selecionar arquivos' }}</span>
                                     <input type="file" multiple class="hidden" @change="handleFilesChange" />
@@ -948,6 +969,19 @@ onMounted(() => {
         @action="handleFeedbackAction"
     />
 </template>
+
+<style scoped>
+.min-h-screen {
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+@media (min-width: 640px) {
+    .min-h-screen {
+        min-height: auto;
+    }
+}
+</style>
 
 <style>
 /* CSS Variables for Zenit Aesthetics */
