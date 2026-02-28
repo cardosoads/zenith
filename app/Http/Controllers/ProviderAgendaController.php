@@ -50,6 +50,8 @@ class ProviderAgendaController extends Controller
             'secondary_color' => $payload['secondaryColor'] ?? '#27272a',
             'payment_requirement' => $payload['payment_requirement'] ?? 'none',
             'embed_height' => 680,
+            'embed_width' => $payload['embed_width'] ?? 480,
+            'transparent_bg' => $payload['transparent_bg'] ?? false,
             'customer_extra_fields' => [],
         ]);
 
@@ -113,6 +115,8 @@ class ProviderAgendaController extends Controller
             'secondary_color' => $payload['secondaryColor'] ?? $agenda->secondary_color,
             'payment_requirement' => $payload['payment_requirement'] ?? $agenda->payment_requirement,
             'is_published' => $payload['is_published'] ?? $agenda->is_published,
+            'embed_width' => $payload['embed_width'] ?? $agenda->embed_width,
+            'transparent_bg' => $payload['transparent_bg'] ?? $agenda->transparent_bg,
         ]);
 
         // Sync Services (Surgical update to avoid FK violations)

@@ -31,6 +31,8 @@ class UpdateProviderAgendaRequest extends FormRequest
             'services.*.isFree' => ['required', 'boolean'],
             'payment_requirement' => ['required', 'string', 'in:none,full,half'],
             'is_published' => ['sometimes', 'boolean'],
+            'embed_width' => ['nullable', 'integer', 'min:300', 'max:1200'],
+            'transparent_bg' => ['nullable', 'boolean'],
         ];
     }
 }
