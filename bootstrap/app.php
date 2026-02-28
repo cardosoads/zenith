@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             'webhooks/*',
+            'w/*/*/bookings/confirm',
+            'w/*/*/bookings/preview',
+            'w/*/*/bookings/search',
+            'w/*/*/bookings/*/cancel',
+            'w/*/*/bookings/*/reschedule',
         ]);
 
         $middleware->web(append: [
