@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, markRaw } from 'vue';
 import { TrendingUp, TrendingDown, Users, DollarSign, BarChart2, Repeat, Activity, Calendar, ShieldUser, ArrowUpRight } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -24,7 +24,7 @@ const kpis = computed(() => [
         label: 'MRR',
         value: fmtBRL(props.metrics.mrr_cents),
         sub: 'Receita Recorrente Mensal',
-        icon: DollarSign,
+        icon: markRaw(DollarSign),
         trend: props.metrics.mom_growth_pct,
     },
     {
@@ -32,7 +32,7 @@ const kpis = computed(() => [
         label: 'Assinantes Ativos',
         value: fmtNum(props.metrics.total_active_subscribers),
         sub: `${fmtNum(props.metrics.active_providers)} prestadores ativos`,
-        icon: Users,
+        icon: markRaw(Users),
         trend: props.metrics.mom_growth_pct,
     },
     {
@@ -40,7 +40,7 @@ const kpis = computed(() => [
         label: 'Churn Rate',
         value: fmtPct(props.metrics.churn_rate_pct),
         sub: 'Cancelamentos no mês anterior',
-        icon: Repeat,
+        icon: markRaw(Repeat),
         trend: null,
         invertTrend: true,
     },
@@ -49,7 +49,7 @@ const kpis = computed(() => [
         label: 'Crescimento MoM',
         value: fmtPct(props.metrics.mom_growth_pct),
         sub: 'Variação de assinantes (mês a mês)',
-        icon: TrendingUp,
+        icon: markRaw(TrendingUp),
         trend: props.metrics.mom_growth_pct,
     },
     {
@@ -57,7 +57,7 @@ const kpis = computed(() => [
         label: 'ARPU',
         value: fmtBRL(props.metrics.arpu_cents),
         sub: 'Receita média por assinante',
-        icon: BarChart2,
+        icon: markRaw(BarChart2),
         trend: null,
     },
     {
@@ -65,7 +65,7 @@ const kpis = computed(() => [
         label: 'LTV Estimado',
         value: fmtBRL(props.metrics.ltv_cents),
         sub: 'Lifetime Value (ARPU / Churn)',
-        icon: Activity,
+        icon: markRaw(Activity),
         trend: null,
     },
 ]);

@@ -1,6 +1,6 @@
 <script setup>
 import AgendaSelector from '@/Components/Provider/AgendaSelector.vue';
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch, markRaw } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import {
     BarChart3,
@@ -52,21 +52,21 @@ const userInitials = computed(() => {
 const navItems = computed(() => {
     if (roles.value.includes('admin')) {
         return [
-            { label: 'Dashboard', route: 'dashboard', icon: LayoutDashboard },
-            { label: 'Prestadores', route: 'admin.providers.index', icon: ShieldUser },
-            { label: 'Pagamentos', route: 'admin.payment-settings.index', icon: CreditCard },
+            { label: 'Dashboard', route: 'dashboard', icon: markRaw(LayoutDashboard) },
+            { label: 'Prestadores', route: 'admin.providers.index', icon: markRaw(ShieldUser) },
+            { label: 'Pagamentos', route: 'admin.payment-settings.index', icon: markRaw(CreditCard) },
         ];
     }
 
     return [
-        { label: 'Dashboard', route: 'dashboard', icon: LayoutDashboard },
-        { label: 'Minhas Agendas', route: 'provider.agendas.index', icon: Grid2x2 },
-        { label: 'Serviços', route: 'services.index', icon: Settings2 },
-        { label: 'Regras de Agenda', route: 'availability-rules.index', icon: CalendarDays },
-        { label: 'Agendamentos', route: 'bookings.index', icon: CalendarCheck2 },
-        { label: 'Clientes', route: 'customers.index', icon: Users },
-        { label: 'Relatórios', route: 'reports.index', icon: BarChart3 },
-        { label: 'Pagamentos PIX', route: 'provider.payment-settings.index', icon: CreditCard },
+        { label: 'Dashboard', route: 'dashboard', icon: markRaw(LayoutDashboard) },
+        { label: 'Minhas Agendas', route: 'provider.agendas.index', icon: markRaw(Grid2x2) },
+        { label: 'Serviços', route: 'services.index', icon: markRaw(Settings2) },
+        { label: 'Regras de Agenda', route: 'availability-rules.index', icon: markRaw(CalendarDays) },
+        { label: 'Agendamentos', route: 'bookings.index', icon: markRaw(CalendarCheck2) },
+        { label: 'Clientes', route: 'customers.index', icon: markRaw(Users) },
+        { label: 'Relatórios', route: 'reports.index', icon: markRaw(BarChart3) },
+        { label: 'Pagamentos PIX', route: 'provider.payment-settings.index', icon: markRaw(CreditCard) },
     ];
 });
 
