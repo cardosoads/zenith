@@ -34,7 +34,7 @@ const previewUrl = computed(() => {
 });
 
 const embedCode = computed(() => {
-    return `<script src="${props.embedScriptUrl}" data-za-provider="${props.provider.slug}" data-za-agenda="${props.agenda.slug}" data-za-theme="${form.theme}" data-za-accent="${form.accent}" data-za-density="${form.density}" data-za-preset="${form.preset}" data-za-height="${form.embed_height}"><\\/script>`;
+    return `<div id="zenith-booking-widget"></div>\n<script src="${props.embedScriptUrl}" data-za-container="#zenith-booking-widget" data-za-provider="${props.provider.slug}" data-za-agenda="${props.agenda.slug}" data-za-theme="${form.theme}" data-za-accent="${form.accent}" data-za-density="${form.density}" data-za-preset="${form.preset}" data-za-height="${form.embed_height}"><\\/script>`;
 });
 
 const submit = () => {
